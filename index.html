@@ -153,7 +153,7 @@ td.n{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;white-sp
           <label class="full">Sportininkas<select id="f-athlete" required></select></label>
           <label class="full">Veikla<select id="f-sport"></select></label>
           <label><span id="f-unit">Atstumas (km)</span><input id="f-amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="10" required></label>
-          <label>Data<input id="f-date" type="date" min="2027-01-01" max="2027-03-01" required></label>
+          <label>Data<input id="f-date" type="date" required></label>
           <label class="full">Pastaba (neprivaloma)<input id="f-note" type="text" maxlength="80" placeholder="Rytinis bėgimas palei Nerį"></label>
           <div class="preview"><div class="rule" id="f-rule"></div><div class="val" id="f-pts">0</div></div>
           <button class="primary" id="f-submit" type="submit">Pridėti taškus</button>
@@ -199,8 +199,6 @@ const SPORTS = [
 ];
 const SPORT = Object.fromEntries(SPORTS.map(s=>[s.id,s]));
 const START = "2027-01-01", END = "2027-03-01", DAYS = 60;
-/* Testavimas: iki sausio 1 d. galima registruoti nuo TEST_FROM. Nuo sausio 1 d. testiniai įrašai automatiškai nebeskaičiuojami ir paslepiami. */
-const TEST_FROM = "2026-10-22";
 const MONTHS = ["sausio","vasario","kovo","balandžio","gegužės","birželio","liepos","rugpjūčio","rugsėjo","spalio","lapkričio","gruodžio"];
 const $ = id => document.getElementById(id);
 
@@ -214,10 +212,7 @@ function ymd(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0
 function dayIndex(s){ return Math.round((Date.parse(s+"T12:00:00Z") - Date.parse(START+"T12:00:00Z"))/864e5); }
 function todayStr(){ return ymd(new Date()); }
 function inWindow(s){ return s >= START && s <= END; }
-function isTest(s){ return s >= TEST_FROM && s < START; }
-function testing(){ return todayStr() < START; }
-function counts(s){ return inWindow(s) || (testing() && isTest(s)); }
-function visible(e){ return inWindow(e.date) || (testing() && isTest(e.date)); }
+function addDays(s,n){ const d=new Date(s+"T12:00:00Z"); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); }
 function prettyDate(s){ const [, m, d] = s.split("-").map(Number); return `${MONTHS[m-1]} ${d} d.`; }
 function amountText(sport, amount){ const s = SPORT[sport]; if(!s) return ""; return s.unit==="km" ? fmt(amount)+" km" : (amount>=60 ? fmt(amount/60)+" val." : Math.round(amount)+" min."); }
 function lsGet(k){ try{ return localStorage.getItem(k); }catch(_){ return null; } }
@@ -247,8 +242,8 @@ async function refresh(){
   try{
     entries = clean(await apiLoad());
     lsSet("sl27-cache", JSON.stringify(entries));
-    const n = entries.filter(visible).length;
-    $("status").textContent = (n ? `${n} ${plural(n,"veikla","veiklos","veiklų")} · atnaujinama automatiškai` : "Laukiama pirmos veiklos") + (testing() ? " · testavimo režimas: iki sausio 1 d. įrašai bus išvalyti iš lentelės" : "");
+    const n = entries.length;
+    $("status").textContent = (n ? `${n} ${plural(n,"veikla","veiklos","veiklų")} · atnaujinama automatiškai` : "Laukiama pirmos veiklos");
     renderAll();
   }catch(_){
     $("status").textContent = "Nepavyko prisijungti prie lygos. Bandoma iš naujo…";
@@ -273,7 +268,7 @@ function renderClock(){
 function totals(){
   const by = Object.fromEntries(ATHLETES.map(a=>[a,{pts:0,sports:{}}]));
   for(const e of entries){
-    if(!by[e.athlete] || !counts(e.date)) continue;
+    if(!by[e.athlete]) continue;
     const p = pointsOf(e.sport, e.amount);
     by[e.athlete].pts += p;
     const s = by[e.athlete].sports[e.sport] ||= {amount:0, pts:0};
@@ -311,30 +306,36 @@ function renderBoard(){
 /* ---------- Grafikas ---------- */
 function renderChart(){
   const t = todayStr();
-  const last = t < START ? -1 : Math.min(dayIndex(t), DAYS-1);
   const chart = $("chart"), legend = $("legend");
   legend.innerHTML = "";
   ATHLETES.forEach((a,i)=>{ const s=document.createElement("span"); s.innerHTML='<span class="dot"></span>'; s.firstChild.style.background=`var(${COLORS[i]})`; s.append(a); legend.append(s); });
-  const counted = entries.filter(e=>inWindow(e.date));
-  if(last < 0 || counted.length === 0){
-    chart.innerHTML = `<div class="empty">${last<0 ? "Lenktynių linija prasidės sausio 1 d. Kiekviena užregistruota veikla pakels tavo liniją aukštyn." : "Taškų dar nėra. Užregistruok pirmą veiklą ir lenktynės prasidės."}</div>`;
+  if(entries.length === 0){
+    chart.innerHTML = '<div class="empty">Taškų dar nėra. Užregistruok pirmą veiklą ir lenktynės prasidės.</div>';
     return;
   }
-  const daily = ATHLETES.map(()=>new Array(DAYS).fill(0));
-  for(const e of counted){ const ai = ATHLETES.indexOf(e.athlete); const d = dayIndex(e.date); if(ai>=0 && d>=0 && d<DAYS) daily[ai][d] += pointsOf(e.sport,e.amount); }
+  const first = entries.reduce((m,e)=>e.date<m?e.date:m, START);
+  const lastDate = t > END ? t : END;
+  const span = Math.max(1, dayDiff(first, lastDate));
+  const last = Math.min(dayDiff(first, t), span);
+  const daily = ATHLETES.map(()=>new Array(span+1).fill(0));
+  for(const e of entries){ const ai = ATHLETES.indexOf(e.athlete); const d = dayDiff(first, e.date); if(ai>=0 && d>=0 && d<=span) daily[ai][d] += pointsOf(e.sport,e.amount); }
   const cum = daily.map(arr=>{ let s=0; return arr.map(v=>s+=v); });
   const maxV = Math.max(1, ...cum.map(c=>c[last]));
   const step = niceStep(maxV/4), yMax = Math.ceil(maxV/step)*step;
   const W=600,H=250,L=40,R=14,T=10,B=26, pw=W-L-R, ph=H-T-B;
-  const x = d => L + d/(DAYS-1)*pw, y = v => T + ph - v/yMax*ph;
+  const x = d => L + d/span*pw, y = v => T + ph - v/yMax*ph;
   let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Sukaupti taškai pagal sportininką">`;
   for(let v=0; v<=yMax+1e-9; v+=step){
     svg += `<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/>`;
     svg += `<text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)" font-family="IBM Plex Mono, monospace">${fmt(v)}</text>`;
   }
-  [[0,"Sausio 1"],[31,"Vasario 1"],[59,"Kovo 1"]].forEach(([d,l],k)=>{
+  const ticks = [[0, first], [span, lastDate]];
+  if(first < START && dayDiff(first,START) > span*0.15 && dayDiff(START,lastDate) > span*0.15) ticks.splice(1,0,[dayDiff(first,START), START]);
+  ticks.forEach(([d,ds],k)=>{
+    const [, m, dd] = ds.split("-").map(Number);
+    const l = MONTHS[m-1].charAt(0).toUpperCase()+MONTHS[m-1].slice(1)+" "+dd;
     svg += `<line x1="${x(d)}" x2="${x(d)}" y1="${T}" y2="${T+ph}" stroke="var(--line)" stroke-dasharray="2 4"/>`;
-    svg += `<text x="${x(d)}" y="${H-6}" text-anchor="${k===0?"start":k===2?"end":"middle"}" font-size="11" fill="var(--muted)" font-family="IBM Plex Mono, monospace">${l}</text>`;
+    svg += `<text x="${x(d)}" y="${H-6}" text-anchor="${k===0?"start":k===ticks.length-1?"end":"middle"}" font-size="11" fill="var(--muted)" font-family="IBM Plex Mono, monospace">${l}</text>`;
   });
   cum.forEach((c,i)=>{
     const pts = c.slice(0,last+1).map((v,d)=>`${x(d).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
@@ -343,6 +344,7 @@ function renderChart(){
   });
   chart.innerHTML = svg + "</svg>";
 }
+function dayDiff(a,b){ return Math.round((Date.parse(b+"T12:00:00Z") - Date.parse(a+"T12:00:00Z"))/864e5); }
 function niceStep(raw){ const p = Math.pow(10, Math.floor(Math.log10(raw||1))); const m = raw/p; return (m<=1?1:m<=2?2:m<=5?5:10)*p; }
 
 /* ---------- Taškų lentelė ---------- */
@@ -360,8 +362,7 @@ function setupForm(){
   fs.innerHTML = SPORTS.map(s=>`<option value="${s.id}">${s.name}</option>`).join("");
   const me = lsGet("sl27-me"); if(me && ATHLETES.includes(me)) fa.value = me;
   const t = todayStr();
-  $("f-date").value = counts(t) ? t : (t > END ? END : "");
-  if(testing()) $("f-date").min = TEST_FROM;
+  $("f-date").value = t; $("f-date").removeAttribute("min"); $("f-date").max = t;
   fa.addEventListener("change",()=>lsSet("sl27-me",fa.value));
   fs.addEventListener("change",()=>{ $("f-amount").value=""; updatePreview(); });
   $("f-amount").addEventListener("input",updatePreview);
@@ -387,7 +388,7 @@ async function onSubmit(ev){
   if(!athlete) return say("Pirmiausia pasirink savo vardą.","err");
   if(!(amount>0)) return say(km ? "Įvesk atstumą kilometrais." : "Įvesk, kiek minučių sportavai.","err");
   if(km ? amount>300 : amount>720) return say("Skaičius per didelis vienai veiklai. Pasitikrink.","err");
-  if(!date || !counts(date)) return say(testing() ? "Testavimo metu data turi būti nuo šiandienos iki 2027 m. kovo 1 d." : "Data turi būti tarp 2027 m. sausio 1 d. ir kovo 1 d.","err");
+  if(!date) return say("Pasirink datą.","err");
   if(date > t) return say("Negalima registruoti veiklos ateityje.","err");
   if(!API_URL) return say("Lyga dar neprijungta prie duomenų bazės.","err");
   $("f-submit").disabled = true; busy = true; say("Saugoma…");
@@ -403,7 +404,7 @@ async function onSubmit(ev){
 /* ---------- Veiklų sąrašas ---------- */
 function renderFeed(){
   const f = $("feed-filter").value;
-  const list = entries.filter(e=>visible(e) && (!f || e.athlete===f)).sort((a,b)=> b.date.localeCompare(a.date) || String(b.createdAt||"").localeCompare(String(a.createdAt||"")));
+  const list = entries.filter(e=>!f || e.athlete===f).sort((a,b)=> b.date.localeCompare(a.date) || String(b.createdAt||"").localeCompare(String(a.createdAt||"")));
   const ul = $("feed"); ul.innerHTML = "";
   if(!list.length){
     const li = document.createElement("li"); const d = document.createElement("div");
@@ -416,7 +417,7 @@ function renderFeed(){
     const s = SPORT[e.sport];
     li.innerHTML = `<div><div class="t"></div><div class="m"></div></div><div class="p"></div><div class="m note" style="grid-column:1"></div><div class="acts"></div>`;
     li.querySelector(".t").textContent = `${e.athlete} · ${s.name}`;
-    li.querySelector(".m").textContent = `${prettyDate(e.date)} · ${amountText(e.sport,e.amount)}` + (isTest(e.date)?" · testas":"");
+    li.querySelector(".m").textContent = `${prettyDate(e.date)} · ${amountText(e.sport,e.amount)}` + "";
     li.querySelector(".p").textContent = "+"+fmt(pointsOf(e.sport,e.amount));
     li.querySelector(".note").textContent = e.note || "";
     const acts = li.querySelector(".acts");

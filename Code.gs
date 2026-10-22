@@ -9,7 +9,6 @@ const SHEET_NAME = 'Veiklos';
 const ATHLETES = ['Edvinas', 'Tomas', 'Vygantas', 'Justas', 'Paulius', 'Eduardas'];
 const SPORTS = ['run', 'bike', 'swim', 'xc', 'row', 'gym', 'padel', 'racket', 'team', 'class', 'climb', 'skate', 'ski', 'yoga'];
 const KM_SPORTS = ['run', 'bike', 'swim', 'xc', 'row'];
-// Testavimas: datos nuo 2026-10-22 leidžiamos; programėlė jų neskaičiuoja nuo 2027-01-01.
 const HEADERS = ['id', 'athlete', 'sport', 'amount', 'date', 'note', 'createdAt'];
 
 function sheet_() {
@@ -29,7 +28,8 @@ function json_(obj) {
 }
 
 function dateStr_(v) {
-  if (v instanceof Date) return Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  // Lentelės (ne skripto) laiko juosta, kad data nepasislinktų per dieną
+  if (v instanceof Date) return Utilities.formatDate(v, SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone(), 'yyyy-MM-dd');
   return String(v).slice(0, 10);
 }
 
@@ -64,9 +64,11 @@ function doPost(e) {
       if (ATHLETES.indexOf(body.athlete) < 0) return json_({ ok: false, error: 'athlete' });
       if (SPORTS.indexOf(body.sport) < 0) return json_({ ok: false, error: 'sport' });
       if (!(amount > 0) || amount > maxAmount) return json_({ ok: false, error: 'amount' });
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < '2026-10-22' || date > '2027-03-01') return json_({ ok: false, error: 'date' });
+      // Ateities datų neleidžiama (+1 d. atsarga dėl laiko juostų)
+      const tomorrow = Utilities.formatDate(new Date(Date.now() + 864e5), SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone(), 'yyyy-MM-dd');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > tomorrow) return json_({ ok: false, error: 'date' });
       const id = Utilities.getUuid();
-      sh.appendRow([id, body.athlete, body.sport, amount, date, String(body.note || '').slice(0, 80), new Date().toISOString()]);
+      sh.appendRow([id, body.athlete, body.sport, amount, "'" + date, String(body.note || '').slice(0, 80), new Date().toISOString()]);
       return json_({ ok: true, id: id });
     }
 

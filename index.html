@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="lt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sporto Lyga 2027</title>
+<meta name="theme-color" content="#0E1A24">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Išdėstymas: viršuje rezultatų juosta, žemiau lentelė + grafikas ir registravimo forma + veiklos; telefone vienas stulpelis */
+:root{
+  --bg:#F2F5F7; --surface:#FFFFFF; --ink:#0E1A24; --muted:#5B6B78; --line:#D9E1E7;
+  --accent:#E2541B; --accent-ink:#FFFFFF; --band:#0E1A24; --band-ink:#EAF0F4; --band-muted:#8EA2B1;
+  --good:#1F8A5B; --bad:#C2372B;
+  --a1:#E2541B; --a2:#1C6DD0; --a3:#1F8A5B; --a4:#9B3FCB; --a5:#C9930A; --a6:#D0347A;
+  --f-display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B131A; --surface:#121D26; --ink:#E6EDF2; --muted:#8FA1AF; --line:#22313D;
+  --accent:#FF7440; --accent-ink:#1A0A03; --band:#060B10; --band-ink:#EAF0F4; --band-muted:#7E93A3;
+  --good:#3CC48A; --bad:#FF6B5E;
+  --a1:#FF7440; --a2:#5AA2FF; --a3:#3CC48A; --a4:#C37BF0; --a5:#F2C23D; --a6:#FF6FAE;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B131A; --surface:#121D26; --ink:#E6EDF2; --muted:#8FA1AF; --line:#22313D;
+  --accent:#FF7440; --accent-ink:#1A0A03; --band:#060B10; --band-ink:#EAF0F4; --band-muted:#7E93A3;
+  --good:#3CC48A; --bad:#FF6B5E;
+  --a1:#FF7440; --a2:#5AA2FF; --a3:#3CC48A; --a4:#C37BF0; --a5:#F2C23D; --a6:#FF6FAE;
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);background:var(--band)}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* Scoreboard band */
+.band{background:var(--band);color:var(--band-ink)}
+.band .wrap{padding-block:22px 20px;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px 32px}
+.brand{display:flex;flex-direction:column;gap:2px;min-width:0}
+.eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--band-muted)}
+h1{font-family:var(--f-display);font-weight:900;font-size:clamp(40px,9vw,72px);line-height:.9;margin:0;letter-spacing:.01em;text-transform:uppercase;text-wrap:balance}
+h1 span{color:var(--accent)}
+.clock{display:flex;gap:22px;align-items:flex-end}
+.clock .big{font-family:var(--f-display);font-weight:800;font-size:44px;line-height:1;font-variant-numeric:tabular-nums}
+.clock .lbl{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--band-muted)}
+.progress{height:6px;background:color-mix(in srgb,var(--band-ink) 14%,transparent);border-radius:3px;overflow:hidden;width:100%;flex-basis:100%}
+.progress i{display:block;height:100%;background:var(--accent);width:0}
+
+main.wrap{padding-block:24px 48px;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:860px){main.wrap{grid-template-columns:minmax(0,1fr)}}
+.col{display:flex;flex-direction:column;gap:24px;min-width:0}
+
+section{min-width:0}
+h2{font-family:var(--f-display);font-weight:800;font-size:26px;text-transform:uppercase;letter-spacing:.02em;margin:0 0 10px;line-height:1}
+.sub{color:var(--muted);font-size:13px;margin:-4px 0 12px}
+
+/* Leaderboard */
+.board{display:flex;flex-direction:column;border-top:2px solid var(--ink)}
+.row{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:12px 2px;border-bottom:1px solid var(--line)}
+.rank{font-family:var(--f-display);font-weight:900;font-size:28px;line-height:1;color:var(--muted);font-variant-numeric:tabular-nums}
+.row.lead .rank{color:var(--accent)}
+.who{display:flex;align-items:center;gap:8px;font-weight:700;font-size:17px;min-width:0}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.pts{font-family:var(--f-display);font-weight:800;font-size:30px;line-height:1;text-align:right;font-variant-numeric:tabular-nums}
+.pts small{font-family:var(--f-mono);font-size:10px;letter-spacing:.08em;color:var(--muted);margin-left:3px;font-weight:500}
+.bar{grid-column:2 / 4;height:5px;background:var(--line);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:3px;transition:width .5s ease}
+.mix{grid-column:2 / 4;font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+.gap{font-family:var(--f-mono);font-size:11px;color:var(--muted);text-align:right;grid-column:3;grid-row:1}
+
+/* Chart */
+.chartbox{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 12px 10px}
+.chartbox svg{display:block;width:100%;height:auto}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--muted);margin-top:8px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.empty{color:var(--muted);font-size:14px;padding:18px 4px;text-align:center}
+
+/* Log form */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px}
+form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.full{grid-column:1 / -1}
+label{display:flex;flex-direction:column;gap:5px;font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);min-width:0}
+input,select{font:inherit;font-family:var(--f-body);font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:10px;width:100%;min-width:0;text-transform:none;letter-spacing:0}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.preview{grid-column:1 / -1;display:flex;align-items:baseline;justify-content:space-between;gap:12px;border-top:1px dashed var(--line);padding-top:12px}
+.preview .val{font-family:var(--f-display);font-weight:900;font-size:40px;line-height:1;color:var(--accent);font-variant-numeric:tabular-nums}
+.preview .rule{font-size:13px;color:var(--muted)}
+button{font:inherit;cursor:pointer;border-radius:4px}
+.primary{grid-column:1 / -1;background:var(--accent);color:var(--accent-ink);border:0;padding:13px;font-family:var(--f-display);font-weight:800;font-size:20px;letter-spacing:.06em;text-transform:uppercase}
+.primary:disabled{opacity:.45;cursor:not-allowed}
+.msg{grid-column:1 / -1;font-size:13.5px;min-height:1.2em;margin:0}
+.msg.ok{color:var(--good)} .msg.err{color:var(--bad)}
+
+/* Feed */
+.feedhead{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.feedhead select{width:auto;font-size:14px;padding:6px 8px}
+.feed{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.feed li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.feed .t{font-weight:600;overflow-wrap:anywhere}
+.feed .m{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+.feed .p{font-family:var(--f-display);font-weight:800;font-size:22px;text-align:right;font-variant-numeric:tabular-nums;line-height:1}
+.feed .acts{grid-column:2;text-align:right;display:flex;gap:6px;justify-content:flex-end}
+.link{background:none;border:0;padding:2px 0;color:var(--muted);font-size:12px;text-decoration:underline;text-underline-offset:2px}
+.link.danger{color:var(--bad)}
+.more{margin-top:10px}
+
+/* Points table */
+table{width:100%;border-collapse:collapse;font-size:14px}
+td,th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}
+th{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500}
+td.n{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+.status{font-size:13px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+<header class="band">
+  <div class="wrap">
+    <div class="brand">
+      <div class="eyebrow">Žiemos lyga · 2027 01 01 – 03 01</div>
+      <h1>Sporto Lyga <span>2027</span></h1>
+    </div>
+    <div class="clock" id="clock"></div>
+    <div class="progress" aria-hidden="true"><i id="prog"></i></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="col">
+    <section aria-labelledby="h-board">
+      <h2 id="h-board">Turnyrinė lentelė</h2>
+      <div class="board" id="board"></div>
+    </section>
+    <section aria-labelledby="h-race">
+      <h2 id="h-race">Lenktynės</h2>
+      <p class="sub">Sukaupti taškai kiekvieną dieną</p>
+      <div class="chartbox"><div id="chart"></div><div class="legend" id="legend"></div></div>
+    </section>
+    <section aria-labelledby="h-rules">
+      <h2 id="h-rules">Taškai</h2>
+      <div style="overflow-x:auto"><table id="rules"></table></div>
+    </section>
+  </div>
+
+  <div class="col">
+    <section aria-labelledby="h-log">
+      <h2 id="h-log">Registruoti veiklą</h2>
+      <div class="card">
+        <form id="form" novalidate>
+          <label class="full">Sportininkas<select id="f-athlete" required></select></label>
+          <label class="full">Veikla<select id="f-sport"></select></label>
+          <label><span id="f-unit">Atstumas (km)</span><input id="f-amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="10" required></label>
+          <label>Data<input id="f-date" type="date" min="2027-01-01" max="2027-03-01" required></label>
+          <label class="full">Pastaba (neprivaloma)<input id="f-note" type="text" maxlength="80" placeholder="Rytinis bėgimas palei Nerį"></label>
+          <div class="preview"><div class="rule" id="f-rule"></div><div class="val" id="f-pts">0</div></div>
+          <button class="primary" id="f-submit" type="submit">Pridėti taškus</button>
+          <p class="msg" id="f-msg" role="status"></p>
+        </form>
+      </div>
+    </section>
+    <section aria-labelledby="h-feed">
+      <div class="feedhead">
+        <h2 id="h-feed">Naujausios veiklos</h2>
+        <select id="feed-filter" aria-label="Rodyti sportininko veiklas"></select>
+      </div>
+      <ul class="feed" id="feed"></ul>
+      <button class="link more" id="more" hidden>Rodyti daugiau</button>
+      <p class="status" id="status">Jungiamasi prie lygos…</p>
+    </section>
+  </div>
+</main>
+
+<script>
+/* ===== NUSTATYMAI ===== Įklijuokite Google Apps Script „Web app“ nuorodą: */
+const API_URL = "https://script.google.com/macros/s/AKfycbzSbysdNwLBeLb-04gG1ns0T9tFD0UqJX7-YY5eqRPsL3yFFLWWuCCw1Yjzwv9-WdCg/exec";
+/* ====================== */
+
+const ATHLETES = ["Edvinas","Tomas","Vygantas","Justas","Paulius","Eduardas"];
+const COLORS = ["--a1","--a2","--a3","--a4","--a5","--a6"];
+// unit: km arba min; pts skiriama už `per` vienetų
+const SPORTS = [
+  {id:"run",   name:"Bėgimas / ėjimas",                      unit:"km",  per:1,  pts:1},
+  {id:"bike",  name:"Dviratis",                              unit:"km",  per:5,  pts:1},
+  {id:"swim",  name:"Plaukimas",                             unit:"km",  per:1,  pts:5},
+  {id:"xc",    name:"Lygumų slidinėjimas",                   unit:"km",  per:1,  pts:2},
+  {id:"row",   name:"Irklavimas / irklavimo treniruoklis",   unit:"km",  per:1,  pts:1},
+  {id:"gym",   name:"Sporto salė",                           unit:"min", per:60, pts:5},
+  {id:"padel", name:"Padelis / tenisas",                     unit:"min", per:60, pts:5},
+  {id:"racket",name:"Skvošas / badmintonas",                 unit:"min", per:60, pts:5},
+  {id:"team",  name:"Krepšinis / futbolas / ledo ritulys",   unit:"min", per:60, pts:5},
+  {id:"class", name:"Spiningas / HIIT / CrossFit",           unit:"min", per:60, pts:5},
+  {id:"climb", name:"Laipiojimas / boulderingas",            unit:"min", per:60, pts:4},
+  {id:"skate", name:"Čiuožimas",                             unit:"min", per:60, pts:3},
+  {id:"ski",   name:"Kalnų slidinėjimas / snieglentė",       unit:"min", per:60, pts:3},
+  {id:"yoga",  name:"Joga / pilatesas / tempimas",           unit:"min", per:60, pts:3},
+];
+const SPORT = Object.fromEntries(SPORTS.map(s=>[s.id,s]));
+const START = "2027-01-01", END = "2027-03-01", DAYS = 60;
+const MONTHS = ["sausio","vasario","kovo","balandžio","gegužės","birželio","liepos","rugpjūčio","rugsėjo","spalio","lapkričio","gruodžio"];
+const $ = id => document.getElementById(id);
+
+let entries = [], feedLimit = 25, pendingDelete = null, busy = false;
+
+/* Lietuviškos daugiskaitos formos: [1, 2–9, 0/10–20] */
+function plural(n, f1, f2, f3){ const a=n%10, b=n%100; if(a===1 && b!==11) return f1; if(a>=2 && a<=9 && (b<12 || b>19)) return f2; return f3; }
+function pointsOf(sport, amount){ const s = SPORT[sport]; if(!s || !(amount>0)) return 0; return amount / s.per * s.pts; }
+function fmt(n){ const r = Math.round(n*10)/10; return (Number.isInteger(r) ? String(r) : r.toFixed(1)).replace(".", ","); }
+function ymd(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function dayIndex(s){ return Math.round((Date.parse(s+"T12:00:00Z") - Date.parse(START+"T12:00:00Z"))/864e5); }
+function todayStr(){ return ymd(new Date()); }
+function inWindow(s){ return s >= START && s <= END; }
+function prettyDate(s){ const [, m, d] = s.split("-").map(Number); return `${MONTHS[m-1]} ${d} d.`; }
+function amountText(sport, amount){ const s = SPORT[sport]; if(!s) return ""; return s.unit==="km" ? fmt(amount)+" km" : (amount>=60 ? fmt(amount/60)+" val." : Math.round(amount)+" min."); }
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(_){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(_){} }
+
+/* ---------- Duomenys (Google Sheets per Apps Script) ---------- */
+async function apiLoad(){
+  const r = await fetch(API_URL + "?t=" + Date.now());
+  const j = await r.json();
+  if(!j.ok) throw new Error(j.error || "load");
+  return j.entries;
+}
+async function apiPost(body){
+  // text/plain, kad naršyklė nesiųstų CORS preflight užklausos
+  const r = await fetch(API_URL, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify(body)});
+  const j = await r.json();
+  if(!j.ok) throw new Error(j.error || "save");
+  return j;
+}
+function clean(list){
+  return (list||[]).map(e=>({...e, amount:Number(e.amount), date:String(e.date||"").slice(0,10)}))
+    .filter(e=>e.id && ATHLETES.includes(e.athlete) && SPORT[e.sport] && e.amount>0 && /^\d{4}-\d{2}-\d{2}$/.test(e.date));
+}
+async function refresh(){
+  if(!API_URL){ $("status").textContent = "Lyga dar neprijungta prie duomenų bazės (trūksta API_URL)."; return; }
+  if(busy) return;
+  try{
+    entries = clean(await apiLoad());
+    lsSet("sl27-cache", JSON.stringify(entries));
+    const n = entries.length;
+    $("status").textContent = n ? `${n} ${plural(n,"veikla","veiklos","veiklų")} · atnaujinama automatiškai` : "Laukiama pirmos veiklos";
+    renderAll();
+  }catch(_){
+    $("status").textContent = "Nepavyko prisijungti prie lygos. Bandoma iš naujo…";
+  }
+}
+
+/* ---------- Laikrodis ---------- */
+function renderClock(){
+  const t = todayStr(), idx = dayIndex(t);
+  let big, lbl, pct;
+  if(t < START){ big = -idx; lbl = plural(big,"diena","dienos","dienų")+" iki starto"; pct = 0; }
+  else if(t > END){ big = "FINIŠAS"; lbl = "Galutiniai rezultatai"; pct = 100; }
+  else { const left = DAYS-idx-1; big = (idx+1)+"/"+DAYS; lbl = `Diena · liko ${left} ${plural(left,"diena","dienos","dienų")}`; pct = (idx+1)/DAYS*100; }
+  const box = document.createElement("div");
+  box.innerHTML = '<div class="big"></div><div class="lbl"></div>';
+  box.firstChild.textContent = big; box.lastChild.textContent = lbl;
+  $("clock").replaceChildren(box);
+  $("prog").style.width = pct+"%";
+}
+
+/* ---------- Suvestinė ---------- */
+function totals(){
+  const by = Object.fromEntries(ATHLETES.map(a=>[a,{pts:0,sports:{}}]));
+  for(const e of entries){
+    if(!by[e.athlete] || !inWindow(e.date)) continue;
+    const p = pointsOf(e.sport, e.amount);
+    by[e.athlete].pts += p;
+    const s = by[e.athlete].sports[e.sport] ||= {amount:0, pts:0};
+    s.amount += e.amount; s.pts += p;
+  }
+  return by;
+}
+
+function renderBoard(){
+  const by = totals();
+  const order = ATHLETES.map((a,i)=>({a,i,...by[a]})).sort((x,y)=>y.pts-x.pts || x.a.localeCompare(y.a,"lt"));
+  const top = order[0].pts || 1;
+  const board = $("board"); board.innerHTML = "";
+  let rank = 0, prev = null;
+  order.forEach((r,k)=>{
+    if(r.pts !== prev){ rank = k+1; prev = r.pts; }
+    const row = document.createElement("div");
+    row.className = "row" + (rank===1 && r.pts>0 ? " lead" : "");
+    const color = `var(${COLORS[r.i]})`;
+    const mix = Object.entries(r.sports).sort((x,y)=>y[1].pts-x[1].pts).slice(0,3)
+      .map(([id,v])=>SPORT[id].name.split(" /")[0]+" "+amountText(id,v.amount)).join(" · ");
+    row.innerHTML = `<div class="rank"></div><div class="who"><span class="dot"></span><span class="nm"></span></div>
+      <div class="pts"><span class="v"></span><small>TŠK</small></div>
+      <div class="bar"><i></i></div><div class="mix"></div>`;
+    row.querySelector(".rank").textContent = rank;
+    row.querySelector(".dot").style.background = color;
+    row.querySelector(".nm").textContent = r.a;
+    row.querySelector(".v").textContent = fmt(r.pts);
+    row.querySelector(".bar i").style.cssText = `width:${r.pts/top*100}%;background:${color}`;
+    row.querySelector(".mix").textContent = mix || "Dar nėra veiklų";
+    board.append(row);
+  });
+}
+
+/* ---------- Grafikas ---------- */
+function renderChart(){
+  const t = todayStr();
+  const last = t < START ? -1 : Math.min(dayIndex(t), DAYS-1);
+  const chart = $("chart"), legend = $("legend");
+  legend.innerHTML = "";
+  ATHLETES.forEach((a,i)=>{ const s=document.createElement("span"); s.innerHTML='<span class="dot"></span>'; s.firstChild.style.background=`var(${COLORS[i]})`; s.append(a); legend.append(s); });
+  const counted = entries.filter(e=>inWindow(e.date));
+  if(last < 0 || counted.length === 0){
+    chart.innerHTML = `<div class="empty">${last<0 ? "Lenktynių linija prasidės sausio 1 d. Kiekviena užregistruota veikla pakels tavo liniją aukštyn." : "Taškų dar nėra. Užregistruok pirmą veiklą ir lenktynės prasidės."}</div>`;
+    return;
+  }
+  const daily = ATHLETES.map(()=>new Array(DAYS).fill(0));
+  for(const e of counted){ const ai = ATHLETES.indexOf(e.athlete); const d = dayIndex(e.date); if(ai>=0 && d>=0 && d<DAYS) daily[ai][d] += pointsOf(e.sport,e.amount); }
+  const cum = daily.map(arr=>{ let s=0; return arr.map(v=>s+=v); });
+  const maxV = Math.max(1, ...cum.map(c=>c[last]));
+  const step = niceStep(maxV/4), yMax = Math.ceil(maxV/step)*step;
+  const W=600,H=250,L=40,R=14,T=10,B=26, pw=W-L-R, ph=H-T-B;
+  const x = d => L + d/(DAYS-1)*pw, y = v => T + ph - v/yMax*ph;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Sukaupti taškai pagal sportininką">`;
+  for(let v=0; v<=yMax+1e-9; v+=step){
+    svg += `<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/>`;
+    svg += `<text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)" font-family="IBM Plex Mono, monospace">${fmt(v)}</text>`;
+  }
+  [[0,"Sausio 1"],[31,"Vasario 1"],[59,"Kovo 1"]].forEach(([d,l],k)=>{
+    svg += `<line x1="${x(d)}" x2="${x(d)}" y1="${T}" y2="${T+ph}" stroke="var(--line)" stroke-dasharray="2 4"/>`;
+    svg += `<text x="${x(d)}" y="${H-6}" text-anchor="${k===0?"start":k===2?"end":"middle"}" font-size="11" fill="var(--muted)" font-family="IBM Plex Mono, monospace">${l}</text>`;
+  });
+  cum.forEach((c,i)=>{
+    const pts = c.slice(0,last+1).map((v,d)=>`${x(d).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+    svg += `<polyline points="${pts}" fill="none" stroke="var(${COLORS[i]})" stroke-width="2.25" stroke-linejoin="round" stroke-linecap="round"/>`;
+    svg += `<circle cx="${x(last)}" cy="${y(c[last])}" r="3.5" fill="var(${COLORS[i]})"/>`;
+  });
+  chart.innerHTML = svg + "</svg>";
+}
+function niceStep(raw){ const p = Math.pow(10, Math.floor(Math.log10(raw||1))); const m = raw/p; return (m<=1?1:m<=2?2:m<=5?5:10)*p; }
+
+/* ---------- Taškų lentelė ---------- */
+function renderRules(){
+  let h = "<thead><tr><th>Veikla</th><th>Už</th><th style='text-align:right'>Taškai</th></tr></thead><tbody>";
+  for(const s of SPORTS) h += `<tr><td>${s.name}</td><td>${s.unit==="km" ? s.per+" km" : "1 val."}</td><td class="n">${s.pts}</td></tr>`;
+  $("rules").innerHTML = h + "</tbody>";
+}
+
+/* ---------- Forma ---------- */
+function setupForm(){
+  const fa = $("f-athlete"), fs = $("f-sport"), ff = $("feed-filter");
+  fa.innerHTML = '<option value="">Kas tu?</option>' + ATHLETES.map(a=>`<option>${a}</option>`).join("");
+  ff.innerHTML = '<option value="">Visi</option>' + ATHLETES.map(a=>`<option>${a}</option>`).join("");
+  fs.innerHTML = SPORTS.map(s=>`<option value="${s.id}">${s.name}</option>`).join("");
+  const me = lsGet("sl27-me"); if(me && ATHLETES.includes(me)) fa.value = me;
+  const t = todayStr();
+  $("f-date").value = inWindow(t) ? t : (t > END ? END : "");
+  fa.addEventListener("change",()=>lsSet("sl27-me",fa.value));
+  fs.addEventListener("change",()=>{ $("f-amount").value=""; updatePreview(); });
+  $("f-amount").addEventListener("input",updatePreview);
+  ff.addEventListener("change",()=>{ feedLimit=25; renderFeed(); });
+  $("more").addEventListener("click",()=>{ feedLimit+=25; renderFeed(); });
+  $("form").addEventListener("submit",onSubmit);
+  updatePreview();
+}
+function updatePreview(){
+  const s = SPORT[$("f-sport").value];
+  $("f-unit").textContent = s.unit==="km" ? "Atstumas (km)" : "Trukmė (min.)";
+  $("f-amount").placeholder = s.unit==="km" ? "10" : "60";
+  $("f-amount").step = s.unit==="km" ? "0.01" : "1";
+  $("f-rule").textContent = s.unit==="km" ? `${s.pts} tšk. už ${s.per} km` : `${s.pts} tšk. už valandą`;
+  $("f-pts").textContent = fmt(pointsOf(s.id, parseFloat(String($("f-amount").value).replace(",", "."))));
+}
+function say(text, kind){ const m=$("f-msg"); m.textContent=text; m.className="msg "+(kind||""); }
+async function onSubmit(ev){
+  ev.preventDefault();
+  const athlete=$("f-athlete").value, sport=$("f-sport").value, date=$("f-date").value, note=$("f-note").value.trim();
+  const amount=parseFloat(String($("f-amount").value).replace(",", "."));
+  const t = todayStr(), km = SPORT[sport].unit==="km";
+  if(!athlete) return say("Pirmiausia pasirink savo vardą.","err");
+  if(!(amount>0)) return say(km ? "Įvesk atstumą kilometrais." : "Įvesk, kiek minučių sportavai.","err");
+  if(km ? amount>300 : amount>720) return say("Skaičius per didelis vienai veiklai. Pasitikrink.","err");
+  if(!date || !inWindow(date)) return say("Data turi būti tarp 2027 m. sausio 1 d. ir kovo 1 d.","err");
+  if(date > t) return say("Negalima registruoti veiklos ateityje.","err");
+  if(!API_URL) return say("Lyga dar neprijungta prie duomenų bazės.","err");
+  $("f-submit").disabled = true; busy = true; say("Saugoma…");
+  try{
+    await apiPost({action:"add", athlete, sport, amount, date, note});
+    say(`Užskaityta: +${fmt(pointsOf(sport,amount))} tšk. (${athlete})`,"ok");
+    $("f-amount").value=""; $("f-note").value=""; updatePreview();
+  }catch(_){
+    say("Nepavyko išsaugoti. Patikrink ryšį ir bandyk dar kartą.","err");
+  }finally{ $("f-submit").disabled = false; busy = false; refresh(); }
+}
+
+/* ---------- Veiklų sąrašas ---------- */
+function renderFeed(){
+  const f = $("feed-filter").value;
+  const list = entries.filter(e=>!f || e.athlete===f).sort((a,b)=> b.date.localeCompare(a.date) || String(b.createdAt||"").localeCompare(String(a.createdAt||"")));
+  const ul = $("feed"); ul.innerHTML = "";
+  if(!list.length){
+    const li = document.createElement("li"); const d = document.createElement("div");
+    d.className = "m"; d.style.gridColumn = "1/-1";
+    d.textContent = f ? `${f}: dar nėra užregistruotų veiklų.` : "Kol kas nieko neužregistruota. Pirmas bėgimas, važiavimas ar treniruotė atsiras čia.";
+    li.append(d); ul.append(li);
+  }
+  for(const e of list.slice(0,feedLimit)){
+    const li = document.createElement("li");
+    const s = SPORT[e.sport];
+    li.innerHTML = `<div><div class="t"></div><div class="m"></div></div><div class="p"></div><div class="m note" style="grid-column:1"></div><div class="acts"></div>`;
+    li.querySelector(".t").textContent = `${e.athlete} · ${s.name}`;
+    li.querySelector(".m").textContent = `${prettyDate(e.date)} · ${amountText(e.sport,e.amount)}` + (inWindow(e.date)?"":" · neįskaičiuota");
+    li.querySelector(".p").textContent = "+"+fmt(pointsOf(e.sport,e.amount));
+    li.querySelector(".note").textContent = e.note || "";
+    const acts = li.querySelector(".acts");
+    if(pendingDelete === e.id){
+      const y=document.createElement("button"); y.className="link danger"; y.textContent="Taip, ištrinti"; y.onclick=()=>remove(e.id);
+      const n=document.createElement("button"); n.className="link"; n.textContent="Palikti"; n.onclick=()=>{pendingDelete=null; renderFeed();};
+      acts.append(y,n);
+    } else {
+      const d=document.createElement("button"); d.className="link"; d.textContent="Ištrinti";
+      d.setAttribute("aria-label",`Ištrinti: ${e.athlete}, ${s.name}, ${prettyDate(e.date)}`);
+      d.onclick=()=>{pendingDelete=e.id; renderFeed();}; acts.append(d);
+    }
+    ul.append(li);
+  }
+  $("more").hidden = list.length <= feedLimit;
+}
+async function remove(id){
+  pendingDelete = null; busy = true;
+  entries = entries.filter(e=>e.id!==id); renderAll();
+  try{ await apiPost({action:"delete", id}); }
+  catch(_){ $("status").textContent = "Nepavyko ištrinti. Bandyk dar kartą."; }
+  finally{ busy = false; refresh(); }
+}
+
+function renderAll(){ renderClock(); renderBoard(); renderChart(); renderFeed(); }
+
+/* ---------- Paleidimas ---------- */
+try{ const c = JSON.parse(lsGet("sl27-cache")||"[]"); entries = clean(c); }catch(_){}
+renderRules(); setupForm(); renderAll(); refresh();
+setInterval(()=>{ if(document.visibilityState==="visible") refresh(); }, 30000);
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") refresh(); });
+setInterval(renderClock, 60*60*1000);
+</script>
+</body>
+</html>

@@ -50,7 +50,7 @@ function json_(obj) {
 function dateStr_(v) {
   // Lentelės (ne skripto) laiko juosta, kad data nepasislinktų per dieną
   if (v instanceof Date) return Utilities.formatDate(v, SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone(), 'yyyy-MM-dd');
-  return String(v).slice(0, 10);
+  return String(v).replace(/^'/, '').slice(0, 10);
 }
 
 function doGet() {
@@ -70,8 +70,8 @@ function doGet() {
   const messages = cv.filter(r => r[0]).slice(-200).map(r => ({
     id: String(r[0]),
     athlete: String(r[1]),
-    text: String(r[2] || ''),
-    createdAt: r[3] instanceof Date ? r[3].toISOString() : String(r[3] || '')
+    text: String(r[2] || '').replace(/^'/, ''),
+    createdAt: r[3] instanceof Date ? r[3].toISOString() : String(r[3] || '').replace(/^'/, '')
   }));
   return json_({ ok: true, entries: entries, messages: messages });
 }
@@ -95,7 +95,7 @@ function doPost(e) {
       const tomorrow = Utilities.formatDate(new Date(Date.now() + 864e5), SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone(), 'yyyy-MM-dd');
       if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > tomorrow) return json_({ ok: false, error: 'date' });
       const id = Utilities.getUuid();
-      sh.appendRow([id, body.athlete, body.sport, amount, "'" + date, String(body.note || '').slice(0, 80), new Date().toISOString()]);
+      sh.appendRow([id, body.athlete, body.sport, amount, date, String(body.note || '').slice(0, 80), new Date().toISOString()]);
       return json_({ ok: true, id: id });
     }
 
@@ -104,8 +104,8 @@ function doPost(e) {
       if (ATHLETES.indexOf(body.athlete) < 0) return json_({ ok: false, error: 'athlete' });
       if (!text) return json_({ ok: false, error: 'text' });
       const id = Utilities.getUuid();
-      // apostrofas – kad Sheets nebandytų tekstą paversti formule ar skaičiumi
-      chatSheet_().appendRow([id, body.athlete, "'" + text, "'" + new Date().toISOString()]);
+      // C ir D stulpeliai suformatuoti kaip tekstas, todėl Sheets jų nepaverčia formule ar data
+      chatSheet_().appendRow([id, body.athlete, text, new Date().toISOString()]);
       return json_({ ok: true, id: id });
     }
 

@@ -367,7 +367,8 @@ async function apiPost(body){
   return j;
 }
 function clean(list){
-  return (list||[]).map(e=>({...e, amount:Number(e.amount), date:String(e.date||"").slice(0,10), note:String(e.note||"")}))
+  const LEGACY = {class:"hiit"}; // senų veiklų ID → naujos
+  return (list||[]).map(e=>({...e, sport: LEGACY[e.sport] || e.sport, amount:Number(e.amount), date:String(e.date||"").slice(0,10), note:String(e.note||"")}))
     .filter(e=>e.id && ATHLETES.includes(e.athlete) && (SPORT[e.sport] || e.sport==="bonus") && e.amount>0 && /^\d{4}-\d{2}-\d{2}$/.test(e.date));
 }
 async function refresh(){

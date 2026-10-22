@@ -123,6 +123,49 @@ dialog::backdrop{background:rgba(6,11,16,.55)}
 .dlg-head h2{font-size:22px}
 .close{background:none;border:0;color:var(--muted);font-size:28px;line-height:1;padding:0 4px}
 @media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+
+/* Bonus card */
+.bonus-top{grid-column:1 / -1}
+.bonus-top .bonus{max-width:760px}
+.bonus{border:2px solid var(--accent);border-radius:6px;padding:14px 16px;background:color-mix(in srgb,var(--accent) 7%,var(--surface));display:flex;flex-direction:column;gap:8px}
+.bonus .eyebrow2{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.bonus h3{font-family:var(--f-display);font-weight:800;font-size:24px;line-height:1.05;margin:0;text-transform:uppercase;text-wrap:balance}
+.bonus p{margin:0;font-size:14px}
+.bonus .who-got{font-size:13px;color:var(--muted)}
+.bonus form{grid-template-columns:1fr 1fr;margin-top:4px}
+.bonus .primary{font-size:17px;padding:10px}
+.bonus.later{border-style:dashed;background:var(--surface)}
+.bonus.later h3{font-size:20px}
+
+/* Calendar */
+.cal{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px}
+.calnav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.calnav b{font-family:var(--f-display);font-weight:800;font-size:22px;text-transform:uppercase;letter-spacing:.02em}
+.calnav button{background:none;border:1px solid var(--line);color:var(--ink);width:34px;height:34px;font-size:18px;line-height:1;padding:0}
+.calgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+.wd{font-family:var(--f-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:center;padding:2px 0 4px}
+.day{position:relative;min-height:50px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--ink);padding:4px 4px 5px;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;text-align:left;font:inherit;min-width:0}
+.day .dn{font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1}
+.day .dots{display:flex;flex-wrap:wrap;gap:2px}
+.day .dots i{width:7px;height:7px;border-radius:50%}
+.day.out{visibility:hidden}
+.day.future{opacity:.55}
+.day.today{border-color:var(--ink);border-width:2px;padding:3px 3px 4px}
+.day.bonusday{border-color:var(--accent);border-style:dashed}
+.day.bonusday::after{content:"★";position:absolute;top:2px;right:4px;font-size:11px;color:var(--accent);line-height:1}
+.day.sel{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.daydetail{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+.daydetail h3{font-family:var(--f-display);font-weight:800;font-size:20px;margin:0 0 6px;text-transform:uppercase}
+.daydetail ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
+.daydetail li{display:flex;justify-content:space-between;gap:10px;font-size:14px}
+.daydetail li span:first-child{display:flex;align-items:center;gap:7px;min-width:0;overflow-wrap:anywhere}
+.daydetail li b{font-variant-numeric:tabular-nums;white-space:nowrap}
+.daydetail .bn{font-size:13px;color:var(--accent);margin:0 0 6px}
+.blist{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.blist li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:2px 10px;align-items:baseline;font-size:14px;border-bottom:1px solid var(--line);padding-bottom:8px}
+.blist .d{font-family:var(--f-mono);font-size:11px;color:var(--accent);white-space:nowrap}
+.blist .x{font-size:12.5px;color:var(--muted);grid-column:2 / 4}
+.dlg-sec{font-family:var(--f-display);font-weight:800;font-size:18px;text-transform:uppercase;margin:18px 0 0}
 </style>
 </head>
 <body>
@@ -138,10 +181,20 @@ dialog::backdrop{background:rgba(6,11,16,.55)}
 </header>
 
 <main class="wrap">
+  <section id="bonus-sec" class="bonus-top" aria-label="Premijos diena" hidden></section>
   <div class="col">
     <section aria-labelledby="h-board">
       <div class="h2row"><h2 id="h-board">Turnyrinė lentelė</h2><button class="info" id="info-btn" type="button" aria-label="Kaip skaičiuojami taškai" title="Kaip skaičiuojami taškai">i</button></div>
       <div class="board" id="board"></div>
+    </section>
+    <section aria-labelledby="h-cal">
+      <h2 id="h-cal">Kalendorius</h2>
+      <p class="sub">Paspausk dieną ir pamatysi, kas ką nuveikė. ★ – premijos diena.</p>
+      <div class="cal">
+        <div class="calnav"><button type="button" id="cal-prev" aria-label="Ankstesnis mėnuo">‹</button><b id="cal-title"></b><button type="button" id="cal-next" aria-label="Kitas mėnuo">›</button></div>
+        <div class="calgrid" id="cal-grid"></div>
+        <div class="daydetail" id="cal-detail"></div>
+      </div>
     </section>
     <section aria-labelledby="h-race">
       <h2 id="h-race">Lenktynės</h2>
@@ -182,6 +235,9 @@ dialog::backdrop{background:rgba(6,11,16,.55)}
   <div class="dlg-head"><h2 id="h-rules">Kaip skaičiuojami taškai</h2><button class="close" id="rules-close" type="button" aria-label="Uždaryti">×</button></div>
   <p class="sub">Taškai skiriami proporcingai: pvz., 45 min. sporto salėje = 3,75 tšk., 7,5 km bėgimo = 7,5 tšk.</p>
   <div style="overflow-x:auto"><table id="rules"></table></div>
+  <h3 class="dlg-sec">Premijos dienos</h3>
+  <p class="sub" style="margin-top:4px">Kiekvieną premijos dieną galima gauti papildomų taškų. Vienas sportininkas – viena premija per dieną.</p>
+  <ul class="blist" id="bonus-list"></ul>
 </dialog>
 
 <script>
@@ -202,25 +258,45 @@ const SPORTS = [
   {id:"basket", name:"Krepšinis",         unit:"min", per:60, pts:5},
 ];
 const SPORT = Object.fromEntries(SPORTS.map(s=>[s.id,s]));
+
+/* ===== PREMIJOS DIENOS =====
+   kind "auto"  – taškai skiriami automatiškai pagal tą dieną užregistruotas veiklas.
+   kind "claim" – sportininkas pats įveda rezultatą (pvz., žingsnius); galima pateikti tą dieną ir kitą dieną.
+   test: true   – bandomoji premija, rodoma tik iki sausio 1 d. */
+const BONUSES = [
+  {id:"t1", date:"2026-10-22", test:true, kind:"claim", pts:10, title:"Bandomoji: 30 000 žingsnių", desc:"Surink 30 000 žingsnių per dieną.", field:"Žingsniai", min:30000},
+  {id:"b1", date:"2027-01-01", kind:"auto",  pts:10, title:"Naujametinis startas",       desc:"Nubėk arba nueik bent 10 km per dieną.", rule:{type:"km", sports:["run","walk"], min:10}},
+  {id:"b2", date:"2027-01-13", kind:"auto",  pts:10, title:"Sausio 13-osios kilometrai", desc:"Nubėk arba nueik bent 13 km per dieną.", rule:{type:"km", sports:["run","walk"], min:13}},
+  {id:"b3", date:"2027-01-24", kind:"claim", pts:10, title:"30 000 žingsnių",            desc:"Surink 30 000 žingsnių per dieną (pagal laikrodį ar telefoną).", field:"Žingsniai", min:30000},
+  {id:"b4", date:"2027-02-14", kind:"auto",  pts:10, title:"Dvigubas Valentinas",        desc:"Užregistruok bent 2 skirtingas veiklas tą pačią dieną.", rule:{type:"sports", min:2}},
+  {id:"b5", date:"2027-02-16", kind:"auto",  pts:10, title:"Vasario 16-osios iššūkis",   desc:"Surink bent 16 veiklos taškų per dieną.", rule:{type:"points", min:16}},
+];
+const BONUS = Object.fromEntries(BONUSES.map(b=>[b.id,b]));
+
 const START = "2027-01-01", END = "2027-03-01", DAYS = 60;
 const MONTHS = ["sausio","vasario","kovo","balandžio","gegužės","birželio","liepos","rugpjūčio","rugsėjo","spalio","lapkričio","gruodžio"];
+const MONTHS_NOM = ["Sausis","Vasaris","Kovas","Balandis","Gegužė","Birželis","Liepa","Rugpjūtis","Rugsėjis","Spalis","Lapkritis","Gruodis"];
 const $ = id => document.getElementById(id);
 
 let entries = [], feedLimit = 25, pendingDelete = null, busy = false;
+let calMonth = null, calSel = null;
 
 /* Lietuviškos daugiskaitos formos: [1, 2–9, 0/10–20] */
 function plural(n, f1, f2, f3){ const a=n%10, b=n%100; if(a===1 && b!==11) return f1; if(a>=2 && a<=9 && (b<12 || b>19)) return f2; return f3; }
 function pointsOf(sport, amount){ const s = SPORT[sport]; if(!s || !(amount>0)) return 0; return amount / s.per * s.pts; }
 function fmt(n){ const r = Math.round(n*10)/10; return (Number.isInteger(r) ? String(r) : r.toFixed(1)).replace(".", ","); }
+function fmtInt(n){ return Math.round(n).toLocaleString("lt-LT"); }
 function ymd(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 function dayIndex(s){ return Math.round((Date.parse(s+"T12:00:00Z") - Date.parse(START+"T12:00:00Z"))/864e5); }
-function todayStr(){ return ymd(new Date()); }
-function inWindow(s){ return s >= START && s <= END; }
+function dayDiff(a,b){ return Math.round((Date.parse(b+"T12:00:00Z") - Date.parse(a+"T12:00:00Z"))/864e5); }
 function addDays(s,n){ const d=new Date(s+"T12:00:00Z"); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); }
+function todayStr(){ return ymd(new Date()); }
 function prettyDate(s){ const [, m, d] = s.split("-").map(Number); return `${MONTHS[m-1]} ${d} d.`; }
 function amountText(sport, amount){ const s = SPORT[sport]; if(!s) return ""; return s.unit==="km" ? fmt(amount)+" km" : (amount>=60 ? fmt(amount/60)+" val." : Math.round(amount)+" min."); }
 function lsGet(k){ try{ return localStorage.getItem(k); }catch(_){ return null; } }
 function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(_){} }
+function activeBonuses(){ const t = todayStr(); return BONUSES.filter(b=>!b.test || t < START); }
+function bonusOn(date){ return activeBonuses().find(b=>b.date===date) || null; }
 
 /* ---------- Duomenys (Google Sheets per Apps Script) ---------- */
 async function apiLoad(){
@@ -237,8 +313,8 @@ async function apiPost(body){
   return j;
 }
 function clean(list){
-  return (list||[]).map(e=>({...e, amount:Number(e.amount), date:String(e.date||"").slice(0,10)}))
-    .filter(e=>e.id && ATHLETES.includes(e.athlete) && SPORT[e.sport] && e.amount>0 && /^\d{4}-\d{2}-\d{2}$/.test(e.date));
+  return (list||[]).map(e=>({...e, amount:Number(e.amount), date:String(e.date||"").slice(0,10), note:String(e.note||"")}))
+    .filter(e=>e.id && ATHLETES.includes(e.athlete) && (SPORT[e.sport] || e.sport==="bonus") && e.amount>0 && /^\d{4}-\d{2}-\d{2}$/.test(e.date));
 }
 async function refresh(){
   if(!API_URL){ $("status").textContent = "Lyga dar neprijungta prie duomenų bazės (trūksta API_URL)."; return; }
@@ -246,13 +322,51 @@ async function refresh(){
   try{
     entries = clean(await apiLoad());
     lsSet("sl27-cache", JSON.stringify(entries));
-    const n = entries.length;
-    $("status").textContent = (n ? `${n} ${plural(n,"veikla","veiklos","veiklų")} · atnaujinama automatiškai` : "Laukiama pirmos veiklos");
+    const n = entries.filter(e=>e.sport!=="bonus").length;
+    $("status").textContent = n ? `${n} ${plural(n,"veikla","veiklos","veiklų")} · atnaujinama automatiškai` : "Laukiama pirmos veiklos";
     renderAll();
   }catch(_){
     $("status").textContent = "Nepavyko prisijungti prie lygos. Bandoma iš naujo…";
   }
 }
+
+/* ---------- Taškų elementai: veiklos + premijos ----------
+   Premijos pareiškimas saugomas kaip įrašas: sport "bonus", note "<premijos id>:<rezultatas>" */
+function claimInfo(e){
+  const [bid, val] = e.note.split(":"); const b = BONUS[bid];
+  return {b, val:Number(val)};
+}
+function validClaim(e){ const {b,val} = claimInfo(e); return !!(b && b.kind==="claim" && activeBonuses().includes(b) && e.date===b.date && val >= b.min); }
+function sportEntries(){ return entries.filter(e=>e.sport!=="bonus"); }
+function autoBonusAwards(){
+  const out = [];
+  for(const b of activeBonuses().filter(b=>b.kind==="auto")){
+    for(const a of ATHLETES){
+      const day = sportEntries().filter(e=>e.athlete===a && e.date===b.date);
+      if(!day.length) continue;
+      let ok = false, r = b.rule;
+      if(r.type==="km") ok = day.filter(e=>r.sports.includes(e.sport)).reduce((s,e)=>s+e.amount,0) >= r.min;
+      if(r.type==="sports") ok = new Set(day.map(e=>e.sport)).size >= r.min;
+      if(r.type==="points") ok = day.reduce((s,e)=>s+pointsOf(e.sport,e.amount),0) >= r.min;
+      if(ok) out.push({athlete:a, date:b.date, b});
+    }
+  }
+  return out;
+}
+/* Vieningas sąrašas: {athlete, date, pts, kind:"sport"|"bonus", e?, b?} */
+function items(){
+  const list = sportEntries().map(e=>({athlete:e.athlete, date:e.date, pts:pointsOf(e.sport,e.amount), kind:"sport", e}));
+  const seen = new Set();
+  for(const e of entries.filter(e=>e.sport==="bonus")){
+    if(!validClaim(e)) continue;
+    const {b} = claimInfo(e); const key = e.athlete+"|"+b.id;
+    if(seen.has(key)) continue; seen.add(key);
+    list.push({athlete:e.athlete, date:e.date, pts:b.pts, kind:"bonus", b, e});
+  }
+  for(const w of autoBonusAwards()) list.push({athlete:w.athlete, date:w.date, pts:w.b.pts, kind:"bonus", b:w.b});
+  return list;
+}
+function hasBonus(athlete, b){ return items().some(i=>i.kind==="bonus" && i.athlete===athlete && i.b.id===b.id); }
 
 /* ---------- Laikrodis ---------- */
 function renderClock(){
@@ -268,21 +382,14 @@ function renderClock(){
   $("prog").style.width = pct+"%";
 }
 
-/* ---------- Suvestinė ---------- */
-function totals(){
-  const by = Object.fromEntries(ATHLETES.map(a=>[a,{pts:0,sports:{}}]));
-  for(const e of entries){
-    if(!by[e.athlete]) continue;
-    const p = pointsOf(e.sport, e.amount);
-    by[e.athlete].pts += p;
-    const s = by[e.athlete].sports[e.sport] ||= {amount:0, pts:0};
-    s.amount += e.amount; s.pts += p;
+/* ---------- Turnyrinė lentelė ---------- */
+function renderBoard(all){
+  const by = Object.fromEntries(ATHLETES.map(a=>[a,{pts:0,sports:{},bonus:0}]));
+  for(const it of all){
+    const r = by[it.athlete]; r.pts += it.pts;
+    if(it.kind==="bonus"){ r.bonus += it.pts; continue; }
+    const s = r.sports[it.e.sport] ||= {amount:0, pts:0}; s.amount += it.e.amount; s.pts += it.pts;
   }
-  return by;
-}
-
-function renderBoard(){
-  const by = totals();
   const order = ATHLETES.map((a,i)=>({a,i,...by[a]})).sort((x,y)=>y.pts-x.pts || x.a.localeCompare(y.a,"lt"));
   const top = order[0].pts || 1;
   const board = $("board"); board.innerHTML = "";
@@ -292,8 +399,8 @@ function renderBoard(){
     const row = document.createElement("div");
     row.className = "row" + (rank===1 && r.pts>0 ? " lead" : "");
     const color = `var(${COLORS[r.i]})`;
-    const mix = Object.entries(r.sports).sort((x,y)=>y[1].pts-x[1].pts).slice(0,3)
-      .map(([id,v])=>SPORT[id].name.split(" /")[0]+" "+amountText(id,v.amount)).join(" · ");
+    const parts = Object.entries(r.sports).sort((x,y)=>y[1].pts-x[1].pts).slice(0,3).map(([id,v])=>SPORT[id].name.split(" /")[0]+" "+amountText(id,v.amount));
+    if(r.bonus) parts.push(`★ premijos +${fmt(r.bonus)}`);
     row.innerHTML = `<div class="rank"></div><div class="who"><span class="dot"></span><span class="nm"></span></div>
       <div class="pts"><span class="v"></span><small>TŠK</small></div>
       <div class="bar"><i></i></div><div class="mix"></div>`;
@@ -302,27 +409,138 @@ function renderBoard(){
     row.querySelector(".nm").textContent = r.a;
     row.querySelector(".v").textContent = fmt(r.pts);
     row.querySelector(".bar i").style.cssText = `width:${r.pts/top*100}%;background:${color}`;
-    row.querySelector(".mix").textContent = mix || "Dar nėra veiklų";
+    row.querySelector(".mix").textContent = parts.join(" · ") || "Dar nėra veiklų";
     board.append(row);
   });
 }
 
+/* ---------- Premijos kortelė ---------- */
+function renderBonusCard(all){
+  const sec = $("bonus-sec"), t = todayStr(), y = addDays(t,-1);
+  const bs = activeBonuses();
+  const today = bs.find(b=>b.date===t);
+  const lateClaim = !today && bs.find(b=>b.date===y && b.kind==="claim");
+  const next = bs.filter(b=>b.date > t).sort((a,b)=>a.date.localeCompare(b.date))[0];
+  const b = today || lateClaim || next;
+  if(!b){ sec.hidden = true; return; }
+  const live = !!(today || lateClaim);
+  const typing = $("b-val") && (sec.contains(document.activeElement) || $("b-val").value);
+  if(typing && sec.dataset.bid===b.id) return;
+  sec.dataset.bid = b.id;
+  const got = ATHLETES.filter(a=>all.some(i=>i.kind==="bonus" && i.athlete===a && i.b.id===b.id));
+  const card = document.createElement("div");
+  card.className = "bonus" + (live ? "" : " later");
+  const eb = document.createElement("div"); eb.className = "eyebrow2";
+  eb.textContent = today ? `★ Šiandien premijos diena · +${b.pts} tšk.` : lateClaim ? `★ Vakar buvo premijos diena · +${b.pts} tšk.` : `★ Kita premijos diena · ${prettyDate(b.date)} · +${b.pts} tšk.`;
+  const h = document.createElement("h3"); h.textContent = b.title;
+  const p = document.createElement("p"); p.textContent = b.desc;
+  card.append(eb,h,p);
+  if(live){
+    const w = document.createElement("p"); w.className = "who-got";
+    w.textContent = got.length ? `Jau gavo: ${got.join(", ")}` : "Kol kas niekas negavo.";
+    if(b.kind==="auto"){
+      const n = document.createElement("p"); n.className = "who-got";
+      n.textContent = "Premija užskaitoma automatiškai, kai užregistruoji tos dienos veiklas.";
+      card.append(n, w);
+    } else {
+      card.append(w);
+      const f = document.createElement("form"); f.noValidate = true;
+      f.innerHTML = `<label>Sportininkas<select id="b-athlete"></select></label>
+        <label><span></span><input id="b-val" type="number" inputmode="numeric" min="0" step="1"></label>
+        <button class="primary" type="submit">Gauti +${b.pts} tšk.</button><p class="msg" id="b-msg" role="status"></p>`;
+      f.querySelector("label:nth-child(2) span").textContent = b.field;
+      f.querySelector("#b-val").placeholder = String(b.min);
+      const sel = f.querySelector("#b-athlete");
+      sel.innerHTML = '<option value="">Kas tu?</option>' + ATHLETES.map(a=>`<option>${a}</option>`).join("");
+      const me = lsGet("sl27-me"); if(me && ATHLETES.includes(me)) sel.value = me;
+      sel.addEventListener("change",()=>lsSet("sl27-me",sel.value));
+      f.addEventListener("submit", ev=>claimBonus(ev, b));
+      if(!lateClaim) card.append(f);
+      else { const n = document.createElement("p"); n.className="who-got"; n.textContent = "Rezultatą dar gali pateikti iki šios dienos pabaigos."; card.append(n, f); }
+    }
+  }
+  sec.replaceChildren(card); sec.hidden = false;
+}
+async function claimBonus(ev, b){
+  ev.preventDefault();
+  const athlete = $("b-athlete").value, val = parseInt($("b-val").value,10);
+  const m = $("b-msg"), say2 = (t,k)=>{ m.textContent=t; m.className="msg "+(k||""); };
+  if(!athlete) return say2("Pirmiausia pasirink savo vardą.","err");
+  if(hasBonus(athlete,b)) return say2(`${athlete} šią premiją jau gavo.`,"err");
+  if(!(val >= b.min)) return say2(`Reikia bent ${fmtInt(b.min)}. Premija neskiriama.`,"err");
+  if(val > 200000) return say2("Skaičius per didelis. Pasitikrink.","err");
+  const btn = ev.target.querySelector("button"); btn.disabled = true; busy = true; say2("Saugoma…");
+  try{
+    await apiPost({action:"add", athlete, sport:"bonus", amount:1, date:b.date, note:`${b.id}:${val}`});
+    say2(`Užskaityta: +${b.pts} tšk. (${athlete})`,"ok");
+  }catch(_){ say2("Nepavyko išsaugoti. Bandyk dar kartą.","err"); btn.disabled = false; }
+  finally{ busy = false; refresh(); }
+}
+
+/* ---------- Kalendorius ---------- */
+function renderCalendar(all){
+  const t = todayStr();
+  if(!calMonth) calMonth = t.slice(0,7);
+  if(!calSel) calSel = t;
+  const [Y, M] = calMonth.split("-").map(Number);
+  $("cal-title").textContent = `${MONTHS_NOM[M-1]} ${Y}`;
+  const grid = $("cal-grid"); grid.innerHTML = "";
+  ["Pr","An","Tr","Kt","Pn","Št","Sk"].forEach(w=>{ const d=document.createElement("div"); d.className="wd"; d.textContent=w; grid.append(d); });
+  const first = new Date(Y, M-1, 1), lead = (first.getDay()+6)%7, days = new Date(Y, M, 0).getDate();
+  const byDay = {};
+  for(const it of all){ (byDay[it.date] ||= new Set()).add(it.athlete); }
+  for(let k=0;k<lead;k++){ const d=document.createElement("div"); d.className="day out"; grid.append(d); }
+  for(let d=1; d<=days; d++){
+    const ds = `${Y}-${String(M).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const btn = document.createElement("button"); btn.type = "button";
+    btn.className = "day" + (ds===t?" today":"") + (ds>t?" future":"") + (bonusOn(ds)?" bonusday":"") + (ds===calSel?" sel":"");
+    const who = byDay[ds] ? ATHLETES.filter(a=>byDay[ds].has(a)) : [];
+    btn.setAttribute("aria-label", `${prettyDate(ds)}${bonusOn(ds)?", premijos diena":""}${who.length?", sportavo: "+who.join(", "):""}`);
+    btn.innerHTML = `<span class="dn">${d}</span><span class="dots"></span>`;
+    const dots = btn.querySelector(".dots");
+    who.forEach(a=>{ const i=document.createElement("i"); i.style.background=`var(${COLORS[ATHLETES.indexOf(a)]})`; dots.append(i); });
+    btn.addEventListener("click",()=>{ calSel = ds; renderCalendar(items()); });
+    grid.append(btn);
+  }
+  // Dienos detalės
+  const det = $("cal-detail"); det.innerHTML = "";
+  const h = document.createElement("h3"); h.textContent = prettyDate(calSel) + (calSel===t ? " · šiandien" : ""); det.append(h);
+  const b = bonusOn(calSel);
+  if(b){ const p=document.createElement("p"); p.className="bn"; p.textContent=`★ Premijos diena: ${b.title} (+${b.pts} tšk.)`; det.append(p); }
+  const dayItems = all.filter(i=>i.date===calSel).sort((x,y)=>ATHLETES.indexOf(x.athlete)-ATHLETES.indexOf(y.athlete) || (x.kind==="bonus") - (y.kind==="bonus"));
+  if(!dayItems.length){ const p=document.createElement("p"); p.className="sub"; p.style.margin="0"; p.textContent = calSel > t ? "Ši diena dar neatėjo." : "Šią dieną niekas nesportavo."; det.append(p); return; }
+  const ul = document.createElement("ul");
+  for(const it of dayItems){
+    const li = document.createElement("li");
+    li.innerHTML = '<span><i class="dot"></i><span></span></span><b></b>';
+    li.querySelector(".dot").style.background = `var(${COLORS[ATHLETES.indexOf(it.athlete)]})`;
+    li.querySelector("span span").textContent = it.kind==="bonus" ? `${it.athlete} · ★ ${it.b.title}` : `${it.athlete} · ${SPORT[it.e.sport].name} ${amountText(it.e.sport,it.e.amount)}`;
+    li.querySelector("b").textContent = "+"+fmt(it.pts);
+    ul.append(li);
+  }
+  det.append(ul);
+}
+function shiftMonth(n){
+  const [Y,M] = calMonth.split("-").map(Number); const d = new Date(Y, M-1+n, 1);
+  calMonth = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`; renderCalendar(items());
+}
+
 /* ---------- Grafikas ---------- */
-function renderChart(){
+function renderChart(all){
   const t = todayStr();
   const chart = $("chart"), legend = $("legend");
   legend.innerHTML = "";
   ATHLETES.forEach((a,i)=>{ const s=document.createElement("span"); s.innerHTML='<span class="dot"></span>'; s.firstChild.style.background=`var(${COLORS[i]})`; s.append(a); legend.append(s); });
-  if(entries.length === 0){
+  if(all.length === 0){
     chart.innerHTML = '<div class="empty">Taškų dar nėra. Užregistruok pirmą veiklą ir lenktynės prasidės.</div>';
     return;
   }
-  const first = entries.reduce((m,e)=>e.date<m?e.date:m, START);
+  const first = all.reduce((m,e)=>e.date<m?e.date:m, START);
   const lastDate = t > END ? t : END;
   const span = Math.max(1, dayDiff(first, lastDate));
-  const last = Math.min(dayDiff(first, t), span);
+  const last = Math.max(0, Math.min(dayDiff(first, t), span));
   const daily = ATHLETES.map(()=>new Array(span+1).fill(0));
-  for(const e of entries){ const ai = ATHLETES.indexOf(e.athlete); const d = dayDiff(first, e.date); if(ai>=0 && d>=0 && d<=span) daily[ai][d] += pointsOf(e.sport,e.amount); }
+  for(const it of all){ const ai = ATHLETES.indexOf(it.athlete); const d = dayDiff(first, it.date); if(ai>=0 && d>=0 && d<=span) daily[ai][d] += it.pts; }
   const cum = daily.map(arr=>{ let s=0; return arr.map(v=>s+=v); });
   const maxV = Math.max(1, ...cum.map(c=>c[last]));
   const step = niceStep(maxV/4), yMax = Math.ceil(maxV/step)*step;
@@ -348,14 +566,23 @@ function renderChart(){
   });
   chart.innerHTML = svg + "</svg>";
 }
-function dayDiff(a,b){ return Math.round((Date.parse(b+"T12:00:00Z") - Date.parse(a+"T12:00:00Z"))/864e5); }
 function niceStep(raw){ const p = Math.pow(10, Math.floor(Math.log10(raw||1))); const m = raw/p; return (m<=1?1:m<=2?2:m<=5?5:10)*p; }
 
-/* ---------- Taškų lentelė ---------- */
+/* ---------- Taisyklės ---------- */
 function renderRules(){
   let h = "<thead><tr><th>Veikla</th><th>Už</th><th style='text-align:right'>Taškai</th></tr></thead><tbody>";
   for(const s of SPORTS) h += `<tr><td>${s.name}</td><td>${s.unit==="km" ? s.per+" km" : "1 val."}</td><td class="n">${s.pts}</td></tr>`;
   $("rules").innerHTML = h + "</tbody>";
+  const ul = $("bonus-list"); ul.innerHTML = "";
+  for(const b of BONUSES.filter(b=>!b.test)){
+    const li = document.createElement("li");
+    li.innerHTML = '<span class="d"></span><b></b><span class="n" style="font-weight:700;white-space:nowrap"></span><span class="x"></span>';
+    li.querySelector(".d").textContent = prettyDate(b.date);
+    li.querySelector("b").textContent = b.title;
+    li.querySelector(".n").textContent = `+${b.pts}`;
+    li.querySelector(".x").textContent = b.desc + (b.kind==="auto" ? " Užskaitoma automatiškai." : " Rezultatą įvesk premijos kortelėje tą ar kitą dieną.");
+    ul.append(li);
+  }
 }
 
 /* ---------- Forma ---------- */
@@ -366,13 +593,15 @@ function setupForm(){
   fs.innerHTML = SPORTS.map(s=>`<option value="${s.id}">${s.name}</option>`).join("");
   const me = lsGet("sl27-me"); if(me && ATHLETES.includes(me)) fa.value = me;
   const t = todayStr();
-  $("f-date").value = t; $("f-date").removeAttribute("min"); $("f-date").max = t;
+  $("f-date").value = t; $("f-date").max = t;
   fa.addEventListener("change",()=>lsSet("sl27-me",fa.value));
   fs.addEventListener("change",()=>{ $("f-amount").value=""; updatePreview(); });
   $("f-amount").addEventListener("input",updatePreview);
-  ff.addEventListener("change",()=>{ feedLimit=25; renderFeed(); });
-  $("more").addEventListener("click",()=>{ feedLimit+=25; renderFeed(); });
+  ff.addEventListener("change",()=>{ feedLimit=25; renderFeed(items()); });
+  $("more").addEventListener("click",()=>{ feedLimit+=25; renderFeed(items()); });
   $("form").addEventListener("submit",onSubmit);
+  $("cal-prev").addEventListener("click",()=>shiftMonth(-1));
+  $("cal-next").addEventListener("click",()=>shiftMonth(1));
   updatePreview();
 }
 function updatePreview(){
@@ -406,9 +635,9 @@ async function onSubmit(ev){
 }
 
 /* ---------- Veiklų sąrašas ---------- */
-function renderFeed(){
+function renderFeed(all){
   const f = $("feed-filter").value;
-  const list = entries.filter(e=>!f || e.athlete===f).sort((a,b)=> b.date.localeCompare(a.date) || String(b.createdAt||"").localeCompare(String(a.createdAt||"")));
+  const list = all.filter(i=>!f || i.athlete===f).sort((a,b)=> b.date.localeCompare(a.date) || String((b.e&&b.e.createdAt)||"").localeCompare(String((a.e&&a.e.createdAt)||"")));
   const ul = $("feed"); ul.innerHTML = "";
   if(!list.length){
     const li = document.createElement("li"); const d = document.createElement("div");
@@ -416,23 +645,31 @@ function renderFeed(){
     d.textContent = f ? `${f}: dar nėra užregistruotų veiklų.` : "Kol kas nieko neužregistruota. Pirmas bėgimas, važiavimas ar treniruotė atsiras čia.";
     li.append(d); ul.append(li);
   }
-  for(const e of list.slice(0,feedLimit)){
+  for(const it of list.slice(0,feedLimit)){
     const li = document.createElement("li");
-    const s = SPORT[e.sport];
     li.innerHTML = `<div><div class="t"></div><div class="m"></div></div><div class="p"></div><div class="m note" style="grid-column:1"></div><div class="acts"></div>`;
-    li.querySelector(".t").textContent = `${e.athlete} · ${s.name}`;
-    li.querySelector(".m").textContent = `${prettyDate(e.date)} · ${amountText(e.sport,e.amount)}` + "";
-    li.querySelector(".p").textContent = "+"+fmt(pointsOf(e.sport,e.amount));
-    li.querySelector(".note").textContent = e.note || "";
-    const acts = li.querySelector(".acts");
-    if(pendingDelete === e.id){
-      const y=document.createElement("button"); y.className="link danger"; y.textContent="Taip, ištrinti"; y.onclick=()=>remove(e.id);
-      const n=document.createElement("button"); n.className="link"; n.textContent="Palikti"; n.onclick=()=>{pendingDelete=null; renderFeed();};
-      acts.append(y,n);
+    if(it.kind==="bonus"){
+      li.querySelector(".t").textContent = `${it.athlete} · ★ ${it.b.title}`;
+      li.querySelector(".m").textContent = `${prettyDate(it.date)} · premija` + (it.e ? ` · ${it.b.field.toLowerCase()}: ${fmtInt(claimInfo(it.e).val)}` : " · automatiškai");
     } else {
-      const d=document.createElement("button"); d.className="link"; d.textContent="Ištrinti";
-      d.setAttribute("aria-label",`Ištrinti: ${e.athlete}, ${s.name}, ${prettyDate(e.date)}`);
-      d.onclick=()=>{pendingDelete=e.id; renderFeed();}; acts.append(d);
+      const e = it.e, s = SPORT[e.sport];
+      li.querySelector(".t").textContent = `${e.athlete} · ${s.name}`;
+      li.querySelector(".m").textContent = `${prettyDate(e.date)} · ${amountText(e.sport,e.amount)}`;
+      li.querySelector(".note").textContent = e.note || "";
+    }
+    li.querySelector(".p").textContent = "+"+fmt(it.pts);
+    const acts = li.querySelector(".acts");
+    if(it.e){
+      const id = it.e.id;
+      if(pendingDelete === id){
+        const y=document.createElement("button"); y.className="link danger"; y.textContent="Taip, ištrinti"; y.onclick=()=>remove(id);
+        const n=document.createElement("button"); n.className="link"; n.textContent="Palikti"; n.onclick=()=>{pendingDelete=null; renderFeed(items());};
+        acts.append(y,n);
+      } else {
+        const d=document.createElement("button"); d.className="link"; d.textContent="Ištrinti";
+        d.setAttribute("aria-label",`Ištrinti: ${li.querySelector(".t").textContent}, ${prettyDate(it.date)}`);
+        d.onclick=()=>{pendingDelete=id; renderFeed(items());}; acts.append(d);
+      }
     }
     ul.append(li);
   }
@@ -446,7 +683,10 @@ async function remove(id){
   finally{ busy = false; refresh(); }
 }
 
-function renderAll(){ renderClock(); renderBoard(); renderChart(); renderFeed(); }
+function renderAll(){
+  const all = items();
+  renderClock(); renderBoard(all); renderBonusCard(all); renderCalendar(all); renderChart(all); renderFeed(all);
+}
 
 /* ---------- Paleidimas ---------- */
 try{ const c = JSON.parse(lsGet("sl27-cache")||"[]"); entries = clean(c); }catch(_){}
@@ -455,7 +695,8 @@ renderRules(); setupForm();
   $("info-btn").addEventListener("click",()=>{ if(d.showModal) d.showModal(); else d.setAttribute("open",""); });
   $("rules-close").addEventListener("click",()=>d.close ? d.close() : d.removeAttribute("open"));
   d.addEventListener("click",ev=>{ if(ev.target===d) d.close(); });
-})(); renderAll(); refresh();
+})();
+renderAll(); refresh();
 setInterval(()=>{ if(document.visibilityState==="visible") refresh(); }, 30000);
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") refresh(); });
 setInterval(renderClock, 60*60*1000);

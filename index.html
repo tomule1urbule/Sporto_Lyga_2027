@@ -313,13 +313,13 @@ const BONUSES = [
   {id:"b02", date:"2026-11-08", kind:"claim", pts:10, title:"30 000 žingsnių",           desc:"Surink 30 000 žingsnių per dieną (pagal laikrodį ar telefoną).", field:"Žingsniai", unitLabel:"žingsnių", min:30000, max:200000},
   {id:"b03", date:"2026-11-23", kind:"auto",  pts:10, title:"Kariuomenės dienos treniruotė", desc:"Praleisk sporto salėje bent 60 min.", rule:{type:"minutes", sports:["gym"], min:60}},
   {id:"b04", date:"2026-12-06", kind:"auto",  pts:10, title:"Ilgasis sekmadienis",       desc:"Nubėk arba nueik bent 15 km per dieną.", rule:{type:"km", sports:["run","walk"], min:15}},
-  {id:"b05", date:"2026-12-26", kind:"claim", pts:10, title:"Kalėdinių kalorijų deginimas", desc:"Sudegink bent 1 500 aktyvių kalorijų per dieną (pagal laikrodį ar programėlę).", field:"Aktyvios kalorijos (kcal)", unitLabel:"kcal", min:1500, max:10000},
+  {id:"b05", date:"2026-12-26", kind:"claim", pts:10, title:"Kalėdinių kalorijų deginimas", desc:"Sudegink bent 3 500 kalorijų per dieną – iš viso, įskaitant ramybės kalorijas (pagal laikrodį ar programėlę).", field:"Kalorijos iš viso (kcal)", unitLabel:"kcal", min:3500, max:15000},
   {id:"b06", date:"2027-01-01", kind:"auto",  pts:10, title:"Naujametinis startas",      desc:"Nubėk arba nueik bent 10 km per dieną.", rule:{type:"km", sports:["run","walk"], min:10}},
   {id:"b07", date:"2027-01-13", kind:"auto",  pts:10, title:"Sausio 13-osios kilometrai", desc:"Nubėk arba nueik bent 13 km per dieną.", rule:{type:"km", sports:["run","walk"], min:13}},
   {id:"b08", date:"2027-01-24", kind:"auto",  pts:10, title:"Plaukimo diena",            desc:"Nuplauk bent 1 km.", rule:{type:"km", sports:["swim"], min:1}},
   {id:"b09", date:"2027-02-14", kind:"auto",  pts:10, title:"Dvigubas Valentinas",       desc:"Užregistruok bent 2 skirtingas veiklas tą pačią dieną.", rule:{type:"sports", min:2}},
   {id:"b10", date:"2027-02-16", kind:"auto",  pts:10, title:"Vasario 16-osios iššūkis",  desc:"Surink bent 16 veiklos taškų per dieną.", rule:{type:"points", min:16}},
-  {id:"b11", date:"2027-03-01", kind:"claim", pts:10, title:"Finišo kalorijos",          desc:"Paskutinę dieną sudegink bent 1 000 aktyvių kalorijų.", field:"Aktyvios kalorijos (kcal)", unitLabel:"kcal", min:1000, max:10000},
+  {id:"b11", date:"2027-03-01", kind:"claim", pts:10, title:"Finišo kalorijos",          desc:"Paskutinę dieną sudegink bent 3 000 kalorijų – iš viso, įskaitant ramybės kalorijas.", field:"Kalorijos iš viso (kcal)", unitLabel:"kcal", min:3000, max:15000},
 ];
 const BONUS = Object.fromEntries(BONUSES.map(b=>[b.id,b]));
 

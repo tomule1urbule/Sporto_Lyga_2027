@@ -113,6 +113,15 @@ td,th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}
 th{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500}
 td.n{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
 .status{font-size:13px;color:var(--muted)}
+.h2row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.h2row h2{margin:0}
+.info{width:30px;height:30px;flex:none;border-radius:50%;border:1.5px solid var(--ink);background:transparent;color:var(--ink);font-family:Georgia,"Times New Roman",serif;font-style:italic;font-weight:700;font-size:16px;line-height:1;display:grid;place-items:center;padding:0}
+.info:hover{background:var(--ink);color:var(--bg)}
+dialog{border:0;border-radius:8px;padding:18px 18px 12px;width:min(520px,calc(100vw - 32px));max-height:calc(100vh - 48px);background:var(--surface);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.35)}
+dialog::backdrop{background:rgba(6,11,16,.55)}
+.dlg-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.dlg-head h2{font-size:22px}
+.close{background:none;border:0;color:var(--muted);font-size:28px;line-height:1;padding:0 4px}
 @media (prefers-reduced-motion:reduce){.bar i{transition:none}}
 </style>
 </head>
@@ -131,17 +140,13 @@ td.n{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;white-sp
 <main class="wrap">
   <div class="col">
     <section aria-labelledby="h-board">
-      <h2 id="h-board">Turnyrinė lentelė</h2>
+      <div class="h2row"><h2 id="h-board">Turnyrinė lentelė</h2><button class="info" id="info-btn" type="button" aria-label="Kaip skaičiuojami taškai" title="Kaip skaičiuojami taškai">i</button></div>
       <div class="board" id="board"></div>
     </section>
     <section aria-labelledby="h-race">
       <h2 id="h-race">Lenktynės</h2>
       <p class="sub">Sukaupti taškai kiekvieną dieną</p>
       <div class="chartbox"><div id="chart"></div><div class="legend" id="legend"></div></div>
-    </section>
-    <section aria-labelledby="h-rules">
-      <h2 id="h-rules">Taškai</h2>
-      <div style="overflow-x:auto"><table id="rules"></table></div>
     </section>
   </div>
 
@@ -172,6 +177,12 @@ td.n{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;white-sp
     </section>
   </div>
 </main>
+
+<dialog id="rules-dlg" aria-labelledby="h-rules">
+  <div class="dlg-head"><h2 id="h-rules">Kaip skaičiuojami taškai</h2><button class="close" id="rules-close" type="button" aria-label="Uždaryti">×</button></div>
+  <p class="sub">Taškai skiriami proporcingai: pvz., 45 min. sporto salėje = 3,75 tšk., 7,5 km bėgimo = 7,5 tšk.</p>
+  <div style="overflow-x:auto"><table id="rules"></table></div>
+</dialog>
 
 <script>
 /* ===== NUSTATYMAI ===== Įklijuokite Google Apps Script „Web app“ nuorodą: */
@@ -446,7 +457,12 @@ function renderAll(){ renderClock(); renderBoard(); renderChart(); renderFeed();
 
 /* ---------- Paleidimas ---------- */
 try{ const c = JSON.parse(lsGet("sl27-cache")||"[]"); entries = clean(c); }catch(_){}
-renderRules(); setupForm(); renderAll(); refresh();
+renderRules(); setupForm();
+(()=>{ const d=$("rules-dlg");
+  $("info-btn").addEventListener("click",()=>{ if(d.showModal) d.showModal(); else d.setAttribute("open",""); });
+  $("rules-close").addEventListener("click",()=>d.close ? d.close() : d.removeAttribute("open"));
+  d.addEventListener("click",ev=>{ if(ev.target===d) d.close(); });
+})(); renderAll(); refresh();
 setInterval(()=>{ if(document.visibilityState==="visible") refresh(); }, 30000);
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") refresh(); });
 setInterval(renderClock, 60*60*1000);

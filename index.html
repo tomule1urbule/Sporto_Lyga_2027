@@ -199,6 +199,8 @@ const SPORTS = [
 ];
 const SPORT = Object.fromEntries(SPORTS.map(s=>[s.id,s]));
 const START = "2027-01-01", END = "2027-03-01", DAYS = 60;
+/* Testavimas: iki sausio 1 d. galima registruoti nuo TEST_FROM. Nuo sausio 1 d. testiniai įrašai automatiškai nebeskaičiuojami ir paslepiami. */
+const TEST_FROM = "2026-10-22";
 const MONTHS = ["sausio","vasario","kovo","balandžio","gegužės","birželio","liepos","rugpjūčio","rugsėjo","spalio","lapkričio","gruodžio"];
 const $ = id => document.getElementById(id);
 
@@ -212,6 +214,10 @@ function ymd(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0
 function dayIndex(s){ return Math.round((Date.parse(s+"T12:00:00Z") - Date.parse(START+"T12:00:00Z"))/864e5); }
 function todayStr(){ return ymd(new Date()); }
 function inWindow(s){ return s >= START && s <= END; }
+function isTest(s){ return s >= TEST_FROM && s < START; }
+function testing(){ return todayStr() < START; }
+function counts(s){ return inWindow(s) || (testing() && isTest(s)); }
+function visible(e){ return inWindow(e.date) || (testing() && isTest(e.date)); }
 function prettyDate(s){ const [, m, d] = s.split("-").map(Number); return `${MONTHS[m-1]} ${d} d.`; }
 function amountText(sport, amount){ const s = SPORT[sport]; if(!s) return ""; return s.unit==="km" ? fmt(amount)+" km" : (amount>=60 ? fmt(amount/60)+" val." : Math.round(amount)+" min."); }
 function lsGet(k){ try{ return localStorage.getItem(k); }catch(_){ return null; } }
@@ -241,8 +247,8 @@ async function refresh(){
   try{
     entries = clean(await apiLoad());
     lsSet("sl27-cache", JSON.stringify(entries));
-    const n = entries.length;
-    $("status").textContent = n ? `${n} ${plural(n,"veikla","veiklos","veiklų")} · atnaujinama automatiškai` : "Laukiama pirmos veiklos";
+    const n = entries.filter(visible).length;
+    $("status").textContent = (n ? `${n} ${plural(n,"veikla","veiklos","veiklų")} · atnaujinama automatiškai` : "Laukiama pirmos veiklos") + (testing() ? " · testavimo režimas: iki sausio 1 d. įrašai bus išvalyti iš lentelės" : "");
     renderAll();
   }catch(_){
     $("status").textContent = "Nepavyko prisijungti prie lygos. Bandoma iš naujo…";
@@ -267,7 +273,7 @@ function renderClock(){
 function totals(){
   const by = Object.fromEntries(ATHLETES.map(a=>[a,{pts:0,sports:{}}]));
   for(const e of entries){
-    if(!by[e.athlete] || !inWindow(e.date)) continue;
+    if(!by[e.athlete] || !counts(e.date)) continue;
     const p = pointsOf(e.sport, e.amount);
     by[e.athlete].pts += p;
     const s = by[e.athlete].sports[e.sport] ||= {amount:0, pts:0};
@@ -354,7 +360,8 @@ function setupForm(){
   fs.innerHTML = SPORTS.map(s=>`<option value="${s.id}">${s.name}</option>`).join("");
   const me = lsGet("sl27-me"); if(me && ATHLETES.includes(me)) fa.value = me;
   const t = todayStr();
-  $("f-date").value = inWindow(t) ? t : (t > END ? END : "");
+  $("f-date").value = counts(t) ? t : (t > END ? END : "");
+  if(testing()) $("f-date").min = TEST_FROM;
   fa.addEventListener("change",()=>lsSet("sl27-me",fa.value));
   fs.addEventListener("change",()=>{ $("f-amount").value=""; updatePreview(); });
   $("f-amount").addEventListener("input",updatePreview);
@@ -380,7 +387,7 @@ async function onSubmit(ev){
   if(!athlete) return say("Pirmiausia pasirink savo vardą.","err");
   if(!(amount>0)) return say(km ? "Įvesk atstumą kilometrais." : "Įvesk, kiek minučių sportavai.","err");
   if(km ? amount>300 : amount>720) return say("Skaičius per didelis vienai veiklai. Pasitikrink.","err");
-  if(!date || !inWindow(date)) return say("Data turi būti tarp 2027 m. sausio 1 d. ir kovo 1 d.","err");
+  if(!date || !counts(date)) return say(testing() ? "Testavimo metu data turi būti nuo šiandienos iki 2027 m. kovo 1 d." : "Data turi būti tarp 2027 m. sausio 1 d. ir kovo 1 d.","err");
   if(date > t) return say("Negalima registruoti veiklos ateityje.","err");
   if(!API_URL) return say("Lyga dar neprijungta prie duomenų bazės.","err");
   $("f-submit").disabled = true; busy = true; say("Saugoma…");
@@ -396,7 +403,7 @@ async function onSubmit(ev){
 /* ---------- Veiklų sąrašas ---------- */
 function renderFeed(){
   const f = $("feed-filter").value;
-  const list = entries.filter(e=>!f || e.athlete===f).sort((a,b)=> b.date.localeCompare(a.date) || String(b.createdAt||"").localeCompare(String(a.createdAt||"")));
+  const list = entries.filter(e=>visible(e) && (!f || e.athlete===f)).sort((a,b)=> b.date.localeCompare(a.date) || String(b.createdAt||"").localeCompare(String(a.createdAt||"")));
   const ul = $("feed"); ul.innerHTML = "";
   if(!list.length){
     const li = document.createElement("li"); const d = document.createElement("div");
@@ -409,7 +416,7 @@ function renderFeed(){
     const s = SPORT[e.sport];
     li.innerHTML = `<div><div class="t"></div><div class="m"></div></div><div class="p"></div><div class="m note" style="grid-column:1"></div><div class="acts"></div>`;
     li.querySelector(".t").textContent = `${e.athlete} · ${s.name}`;
-    li.querySelector(".m").textContent = `${prettyDate(e.date)} · ${amountText(e.sport,e.amount)}` + (inWindow(e.date)?"":" · neįskaičiuota");
+    li.querySelector(".m").textContent = `${prettyDate(e.date)} · ${amountText(e.sport,e.amount)}` + (isTest(e.date)?" · testas":"");
     li.querySelector(".p").textContent = "+"+fmt(pointsOf(e.sport,e.amount));
     li.querySelector(".note").textContent = e.note || "";
     const acts = li.querySelector(".acts");

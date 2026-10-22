@@ -210,7 +210,7 @@ dialog::backdrop{background:rgba(6,11,16,.55)}
     </section>
     <section aria-labelledby="h-race">
       <h2 id="h-race">Lenktynės</h2>
-      <p class="sub">Sukaupti taškai kiekvieną dieną</p>
+      <p class="sub">Kaip kaupėsi taškai kiekvieną dieną</p>
       <div class="chartbox"><div id="chart"></div><div class="legend" id="legend"></div></div>
     </section>
   </div>
@@ -245,7 +245,7 @@ dialog::backdrop{background:rgba(6,11,16,.55)}
 
 <dialog id="rules-dlg" aria-labelledby="h-rules">
   <div class="dlg-head"><h2 id="h-rules">Kaip skaičiuojami taškai</h2><button class="close" id="rules-close" type="button" aria-label="Uždaryti">×</button></div>
-  <p class="sub">Taškai skiriami proporcingai: pvz., 45 min. sporto salėje = 3,75 tšk., 7,5 km bėgimo = 7,5 tšk.</p>
+  <p class="sub">Taškai skiriami proporcingai: pvz., 45 min. sporto salėje = 3,75 taško, 7,5 km bėgimo = 7,5 taško.</p>
   <div style="overflow-x:auto"><table id="rules"></table></div>
   <h3 class="dlg-sec">Bonusų dienos</h3>
   <p class="sub" style="margin-top:4px">Kiekvieną bonuso dieną galima gauti papildomų taškų. Kiekvienas sportininkas tą patį bonusą gali gauti tik kartą.</p>
@@ -276,7 +276,7 @@ const SPORT = Object.fromEntries(SPORTS.map(s=>[s.id,s]));
    kind "claim" – sportininkas pats įveda rezultatą (žingsnius, kalorijas); galima pateikti tą ir kitą dieną.
    rule.type: km (atstumas nurodytose veiklose), minutes (trukmė nurodytose veiklose), sports (skirtingų veiklų sk.), points (veiklos taškai) */
 const BONUSES = [
-  {id:"b01", date:"2026-10-22", kind:"auto",  pts:10, title:"Starto diena",              desc:"Surink bent 5 veiklos taškų per dieną.", rule:{type:"points", min:5}},
+  {id:"b01", date:"2026-10-22", kind:"auto",  pts:10, title:"Starto diena",              desc:"Surink bent 5 veiklos taškus per dieną.", rule:{type:"points", min:5}},
   {id:"b02", date:"2026-11-08", kind:"claim", pts:10, title:"30 000 žingsnių",           desc:"Surink 30 000 žingsnių per dieną (pagal laikrodį ar telefoną).", field:"Žingsniai", unitLabel:"žingsnių", min:30000, max:200000},
   {id:"b03", date:"2026-11-23", kind:"auto",  pts:10, title:"Kariuomenės dienos treniruotė", desc:"Praleisk sporto salėje bent 60 min.", rule:{type:"minutes", sports:["gym"], min:60}},
   {id:"b04", date:"2026-12-06", kind:"auto",  pts:10, title:"Ilgasis sekmadienis",       desc:"Nubėk arba nueik bent 15 km per dieną.", rule:{type:"km", sports:["run","walk"], min:15}},
@@ -302,6 +302,8 @@ let calMonth = null, calSel = null;
 function plural(n, f1, f2, f3){ const a=n%10, b=n%100; if(a===1 && b!==11) return f1; if(a>=2 && a<=9 && (b<12 || b>19)) return f2; return f3; }
 function pointsOf(sport, amount){ const s = SPORT[sport]; if(!s || !(amount>0)) return 0; return amount / s.per * s.pts; }
 function fmt(n){ const r = Math.round(n*10)/10; return (Number.isInteger(r) ? String(r) : r.toFixed(1)).replace(".", ","); }
+/* "1 taškas", "5 taškai", "10 taškų", "3,8 taško" */
+function tsk(n){ const r = Math.round(n*10)/10; const w = !Number.isInteger(r) ? "taško" : plural(Math.abs(r),"taškas","taškai","taškų"); return fmt(r)+" "+w; }
 function fmtInt(n){ return Math.round(n).toLocaleString("lt-LT"); }
 function ymd(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 const DAYS = Math.round((Date.parse(END+"T12:00:00Z") - Date.parse(START+"T12:00:00Z"))/864e5) + 1;
@@ -419,7 +421,7 @@ function renderBoard(all){
     row.className = "row" + (rank===1 && r.pts>0 ? " lead" : "");
     const color = `var(${COLORS[r.i]})`;
     const parts = Object.entries(r.sports).sort((x,y)=>y[1].pts-x[1].pts).slice(0,3).map(([id,v])=>SPORT[id].name.split(" /")[0]+" "+amountText(id,v.amount));
-    if(r.bonus) parts.push(`★ bonusai +${fmt(r.bonus)}`);
+    if(r.bonus) parts.push(`★ bonusai +${tsk(r.bonus)}`);
     row.innerHTML = `<div class="rank"></div><div class="who"><span class="dot"></span><span class="nm"></span></div>
       <div class="pts"><span class="v"></span><small>TŠK</small></div>
       <div class="bar"><i></i></div><div class="mix"></div>`;
@@ -450,7 +452,7 @@ function renderBonusCard(all){
   const card = document.createElement("div");
   card.className = "bonus" + (live ? "" : " later");
   const eb = document.createElement("div"); eb.className = "eyebrow2";
-  eb.textContent = today ? `★ Šiandien bonuso diena · +${b.pts} tšk.` : lateClaim ? `★ Vakar buvo bonuso diena · +${b.pts} tšk.` : `★ Kita bonuso diena · ${prettyDate(b.date)} · +${b.pts} tšk.`;
+  eb.textContent = today ? `★ Šiandien bonuso diena · +${tsk(b.pts)}` : lateClaim ? `★ Vakar buvo bonuso diena · +${tsk(b.pts)}` : `★ Kita bonuso diena · ${prettyDate(b.date)} · +${tsk(b.pts)}`;
   const h = document.createElement("h3"); h.textContent = b.title;
   const p = document.createElement("p"); p.textContent = b.desc;
   card.append(eb,h,p);
@@ -466,7 +468,7 @@ function renderBonusCard(all){
       const f = document.createElement("form"); f.noValidate = true;
       f.innerHTML = `<label>Sportininkas<select id="b-athlete"></select></label>
         <label><span></span><input id="b-val" type="number" inputmode="numeric" min="0" step="1"></label>
-        <button class="primary" type="submit">Gauti +${b.pts} tšk.</button><p class="msg" id="b-msg" role="status"></p>`;
+        <button class="primary" type="submit">Gauti +${tsk(b.pts)}</button><p class="msg" id="b-msg" role="status"></p>`;
       f.querySelector("label:nth-child(2) span").textContent = b.field;
       f.querySelector("#b-val").placeholder = String(b.min);
       const sel = f.querySelector("#b-athlete");
@@ -491,7 +493,7 @@ async function claimBonus(ev, b){
   const btn = ev.target.querySelector("button"); btn.disabled = true; busy = true; say2("Saugoma…");
   try{
     await apiPost({action:"add", athlete, sport:"bonus", amount:1, date:b.date, note:`${b.id}:${val}`});
-    say2(`Užskaityta: +${b.pts} tšk. (${athlete})`,"ok");
+    say2(`Užskaityta: +${tsk(b.pts)} (${athlete})`,"ok");
   }catch(_){ say2("Nepavyko išsaugoti. Bandyk dar kartą.","err"); btn.disabled = false; }
   finally{ busy = false; refresh(); }
 }
@@ -545,7 +547,7 @@ function bonusBox(b, all, t){
   const got = ATHLETES.filter(a=>all.some(i=>i.kind==="bonus" && i.athlete===a && i.b.id===b.id));
   const how = b.kind==="auto" ? "Užskaitoma automatiškai pagal tą dieną užregistruotas veiklas." : `Įvesk savo rezultatą (${b.field.toLowerCase()}) bonuso kortelėje programėlės viršuje – tą arba kitą dieną.`;
   box.innerHTML = '<div class="bk"></div><div class="bt"></div><div class="bd"></div><div class="bh"></div><div class="bg"></div>';
-  box.querySelector(".bk").textContent = `★ Bonuso diena · +${b.pts} tšk.`;
+  box.querySelector(".bk").textContent = `★ Bonuso diena · +${tsk(b.pts)}`;
   box.querySelector(".bt").textContent = b.title;
   box.querySelector(".bd").textContent = b.desc;
   box.querySelector(".bh").textContent = how;
@@ -658,7 +660,7 @@ function updatePreview(){
   $("f-unit").textContent = s.unit==="km" ? "Atstumas (km)" : "Trukmė (min.)";
   $("f-amount").placeholder = s.unit==="km" ? "10" : "60";
   $("f-amount").step = s.unit==="km" ? "0.01" : "1";
-  $("f-rule").textContent = s.unit==="km" ? `${s.pts} tšk. už ${s.per} km` : `${s.pts} tšk. už valandą`;
+  $("f-rule").textContent = s.unit==="km" ? `${tsk(s.pts)} už ${s.per} km` : `${tsk(s.pts)} už valandą`;
   $("f-pts").textContent = fmt(pointsOf(s.id, parseFloat(String($("f-amount").value).replace(",", "."))));
 }
 function say(text, kind){ const m=$("f-msg"); m.textContent=text; m.className="msg "+(kind||""); }
@@ -676,7 +678,7 @@ async function onSubmit(ev){
   $("f-submit").disabled = true; busy = true; say("Saugoma…");
   try{
     await apiPost({action:"add", athlete, sport, amount, date, note});
-    say(`Užskaityta: +${fmt(pointsOf(sport,amount))} tšk. (${athlete})`,"ok");
+    say(`Užskaityta: +${tsk(pointsOf(sport,amount))} (${athlete})`,"ok");
     $("f-amount").value=""; $("f-note").value=""; updatePreview();
   }catch(_){
     say("Nepavyko išsaugoti. Patikrink ryšį ir bandyk dar kartą.","err");

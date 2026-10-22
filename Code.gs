@@ -9,6 +9,27 @@ const SHEET_NAME = 'Veiklos';
 const ATHLETES = ['Edvinas', 'Tomas', 'Vygantas', 'Justas', 'Paulius', 'Eduardas'];
 // Veiklų sąrašas tikrinamas programėlėje, todėl keičiant veiklas šio kodo keisti nereikia.
 const HEADERS = ['id', 'athlete', 'sport', 'amount', 'date', 'note', 'createdAt'];
+const CHAT_SHEET = 'Pokalbiai';
+const CHAT_HEADERS = ['id', 'athlete', 'text', 'createdAt'];
+
+function chatSheet_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(CHAT_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(CHAT_SHEET);
+    sh.appendRow(CHAT_HEADERS);
+    sh.setFrozenRows(1);
+    sh.getRange('C:D').setNumberFormat('@');
+  }
+  return sh;
+}
+
+function deleteById_(sh, id) {
+  const ids = sh.getRange(1, 1, sh.getLastRow(), 1).getValues();
+  for (let i = ids.length - 1; i >= 1; i--) {
+    if (String(ids[i][0]) === String(id)) { sh.deleteRow(i + 1); break; }
+  }
+}
 
 function sheet_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -44,7 +65,15 @@ function doGet() {
     note: String(r[5] || ''),
     createdAt: r[6] instanceof Date ? r[6].toISOString() : String(r[6] || '')
   }));
-  return json_({ ok: true, entries: entries });
+  const cv = chatSheet_().getDataRange().getValues();
+  cv.shift();
+  const messages = cv.filter(r => r[0]).slice(-200).map(r => ({
+    id: String(r[0]),
+    athlete: String(r[1]),
+    text: String(r[2] || ''),
+    createdAt: r[3] instanceof Date ? r[3].toISOString() : String(r[3] || '')
+  }));
+  return json_({ ok: true, entries: entries, messages: messages });
 }
 
 function doPost(e) {
@@ -68,6 +97,21 @@ function doPost(e) {
       const id = Utilities.getUuid();
       sh.appendRow([id, body.athlete, body.sport, amount, "'" + date, String(body.note || '').slice(0, 80), new Date().toISOString()]);
       return json_({ ok: true, id: id });
+    }
+
+    if (body.action === 'chat') {
+      const text = String(body.text || '').trim().slice(0, 500);
+      if (ATHLETES.indexOf(body.athlete) < 0) return json_({ ok: false, error: 'athlete' });
+      if (!text) return json_({ ok: false, error: 'text' });
+      const id = Utilities.getUuid();
+      // apostrofas – kad Sheets nebandytų tekstą paversti formule ar skaičiumi
+      chatSheet_().appendRow([id, body.athlete, "'" + text, "'" + new Date().toISOString()]);
+      return json_({ ok: true, id: id });
+    }
+
+    if (body.action === 'deleteChat') {
+      deleteById_(chatSheet_(), body.id);
+      return json_({ ok: true });
     }
 
     if (body.action === 'delete') {

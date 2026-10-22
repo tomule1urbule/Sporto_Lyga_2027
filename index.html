@@ -193,20 +193,13 @@ const ATHLETES = ["Edvinas","Tomas","Vygantas","Justas","Paulius","Eduardas"];
 const COLORS = ["--a1","--a2","--a3","--a4","--a5","--a6"];
 // unit: km arba min; pts skiriama už `per` vienetų
 const SPORTS = [
-  {id:"run",   name:"Bėgimas / ėjimas",                      unit:"km",  per:1,  pts:1},
-  {id:"bike",  name:"Dviratis",                              unit:"km",  per:5,  pts:1},
-  {id:"swim",  name:"Plaukimas",                             unit:"km",  per:1,  pts:5},
-  {id:"xc",    name:"Lygumų slidinėjimas",                   unit:"km",  per:1,  pts:2},
-  {id:"row",   name:"Irklavimas / irklavimo treniruoklis",   unit:"km",  per:1,  pts:1},
-  {id:"gym",   name:"Sporto salė",                           unit:"min", per:60, pts:5},
-  {id:"padel", name:"Padelis / tenisas",                     unit:"min", per:60, pts:5},
-  {id:"racket",name:"Skvošas / badmintonas",                 unit:"min", per:60, pts:5},
-  {id:"team",  name:"Krepšinis / futbolas / ledo ritulys",   unit:"min", per:60, pts:5},
-  {id:"class", name:"Spiningas / HIIT / CrossFit",           unit:"min", per:60, pts:5},
-  {id:"climb", name:"Laipiojimas / boulderingas",            unit:"min", per:60, pts:4},
-  {id:"skate", name:"Čiuožimas",                             unit:"min", per:60, pts:3},
-  {id:"ski",   name:"Kalnų slidinėjimas / snieglentė",       unit:"min", per:60, pts:3},
-  {id:"yoga",  name:"Joga / pilatesas / tempimas",           unit:"min", per:60, pts:3},
+  {id:"run",    name:"Bėgimas",           unit:"km",  per:1,  pts:1},
+  {id:"walk",   name:"Ėjimas",            unit:"km",  per:1,  pts:1},
+  {id:"bike",   name:"Dviratis",          unit:"km",  per:5,  pts:1},
+  {id:"swim",   name:"Plaukimas",         unit:"km",  per:1,  pts:5},
+  {id:"gym",    name:"Sporto salė",       unit:"min", per:60, pts:5},
+  {id:"padel",  name:"Padelis / tenisas", unit:"min", per:60, pts:5},
+  {id:"basket", name:"Krepšinis",         unit:"min", per:60, pts:5},
 ];
 const SPORT = Object.fromEntries(SPORTS.map(s=>[s.id,s]));
 const START = "2027-01-01", END = "2027-03-01", DAYS = 60;

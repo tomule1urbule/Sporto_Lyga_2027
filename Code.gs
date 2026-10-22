@@ -7,8 +7,7 @@
 
 const SHEET_NAME = 'Veiklos';
 const ATHLETES = ['Edvinas', 'Tomas', 'Vygantas', 'Justas', 'Paulius', 'Eduardas'];
-const SPORTS = ['run', 'bike', 'swim', 'xc', 'row', 'gym', 'padel', 'racket', 'team', 'class', 'climb', 'skate', 'ski', 'yoga'];
-const KM_SPORTS = ['run', 'bike', 'swim', 'xc', 'row'];
+// Veiklų sąrašas tikrinamas programėlėje, todėl keičiant veiklas šio kodo keisti nereikia.
 const HEADERS = ['id', 'athlete', 'sport', 'amount', 'date', 'note', 'createdAt'];
 
 function sheet_() {
@@ -60,10 +59,9 @@ function doPost(e) {
     if (body.action === 'add') {
       const amount = Number(body.amount);
       const date = String(body.date || '');
-      const maxAmount = KM_SPORTS.indexOf(body.sport) >= 0 ? 300 : 720;
       if (ATHLETES.indexOf(body.athlete) < 0) return json_({ ok: false, error: 'athlete' });
-      if (SPORTS.indexOf(body.sport) < 0) return json_({ ok: false, error: 'sport' });
-      if (!(amount > 0) || amount > maxAmount) return json_({ ok: false, error: 'amount' });
+      if (!/^[a-z]{2,12}$/.test(String(body.sport))) return json_({ ok: false, error: 'sport' });
+      if (!(amount > 0) || amount > 720) return json_({ ok: false, error: 'amount' });
       // Ateities datų neleidžiama (+1 d. atsarga dėl laiko juostų)
       const tomorrow = Utilities.formatDate(new Date(Date.now() + 864e5), SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone(), 'yyyy-MM-dd');
       if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > tomorrow) return json_({ ok: false, error: 'date' });

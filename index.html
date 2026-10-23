@@ -87,7 +87,6 @@ h2{font-family:var(--f-display);font-weight:800;font-size:23px;text-transform:up
 .row{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer;background:none;border-left:0;border-right:0;border-top:0;border-radius:0;text-align:left;color:inherit;font:inherit;width:100%}
 .row:last-child{border-bottom:0}
 .row:hover .nm{text-decoration:underline;text-underline-offset:3px}
-.streak{font-size:12.5px;font-weight:700;color:var(--accent);white-space:nowrap}
 .rank{font-family:var(--f-display);font-weight:900;font-size:28px;line-height:1;color:var(--muted);font-variant-numeric:tabular-nums}
 .row.lead .rank{color:var(--accent)}
 .who{display:flex;align-items:center;gap:8px;font-weight:700;font-size:17px;min-width:0}
@@ -252,7 +251,9 @@ dialog::backdrop{background:rgba(6,11,16,.55)}
 .st-top{display:flex;align-items:baseline;gap:10px;margin:2px 0 14px}
 .st-top .big{font-family:var(--f-display);font-weight:900;font-size:44px;line-height:1;font-variant-numeric:tabular-nums}
 .st-top .rk{font-size:13px;color:var(--muted)}
-.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.tile{grid-column:span 2}
+.tile:nth-child(-n+2){grid-column:span 3}
 .tile{background:var(--bg);border-radius:8px;padding:10px;min-width:0}
 .tile b{display:block;font-family:var(--f-display);font-weight:800;font-size:24px;line-height:1.05;font-variant-numeric:tabular-nums}
 .tile span{font-size:11.5px;color:var(--muted)}
@@ -681,15 +682,13 @@ function renderBoard(all){
     const color = col(r.a);
     const parts = Object.entries(r.sports).sort((x,y)=>y[1].pts-x[1].pts).slice(0,3).map(([id,v])=>SPORT[id].name.split(" /")[0]+" "+amountText(id,v.amount));
     if(r.bonus) parts.push(`★ bonusai +${tsk(r.bonus)}`);
-    row.innerHTML = `<div class="rank"></div><div class="who"><span class="dot"></span><span class="nm"></span><span class="streak"></span></div>
+    row.innerHTML = `<div class="rank"></div><div class="who"><span class="dot"></span><span class="nm"></span></div>
       <div class="pts"><span class="v"></span><small>TŠK</small></div>
       <div class="bar"><i></i></div><div class="mix"></div>`;
     row.querySelector(".rank").textContent = rank;
     row.querySelector(".dot").style.background = color;
     row.querySelector(".nm").textContent = r.a;
-    const st = streakOf(r.a).current;
-    if(st >= 2){ row.querySelector(".streak").textContent = `🔥 ${st}`; row.querySelector(".streak").title = `${st} ${plural(st,"diena","dienos","dienų")} iš eilės`; }
-    row.setAttribute("aria-label", `${rank} vieta, ${r.a}, ${tsk(r.pts)}${st>=2?`, ${st} dienos iš eilės`:""}. Atidaryti statistiką`);
+    row.setAttribute("aria-label", `${rank} vieta, ${r.a}, ${tsk(r.pts)}. Atidaryti statistiką`);
     row.querySelector(".v").textContent = fmt(r.pts);
     row.querySelector(".bar i").style.cssText = `width:${r.pts/top*100}%;background:${color}`;
     row.querySelector(".mix").textContent = parts.join(" · ") || "Dar nėra veiklų";
@@ -1295,9 +1294,7 @@ function streakOf(name){
   const days = activeDays(name), t = todayStr();
   let cur = 0, d = days.has(t) ? t : addDays(t,-1);
   while(days.has(d)){ cur++; d = addDays(d,-1); }
-  let best = 0, run = 0, prev = null;
-  for(const x of [...days].sort()){ run = (prev && addDays(prev,1)===x) ? run+1 : 1; best = Math.max(best, run); prev = x; }
-  return {current:cur, best, days:days.size};
+  return {current:cur, days:days.size};
 }
 
 /* ---------- Savaitės lyderis (pirmadienis–sekmadienis) ---------- */
@@ -1377,9 +1374,8 @@ function renderStats(name){
   body.append(top);
   const tiles = document.createElement("div"); tiles.className = "tiles";
   const tile = (v,l)=>{ const t=document.createElement("div"); t.className="tile"; t.innerHTML="<b></b><span></span>"; t.firstChild.textContent=v; t.lastChild.textContent=l; tiles.append(t); };
-  tile(st.current ? `🔥 ${st.current}` : "0", "dienų serija dabar");
-  tile(st.best, "ilgiausia serija");
-  tile(st.days, plural(st.days,"aktyvi diena","aktyvios dienos","aktyvių dienų"));
+  tile(st.current ? `🔥 ${st.current}` : "0", plural(st.current,"diena iš eilės","dienos iš eilės","dienų iš eilės"));
+  tile(st.days, plural(st.days,"aktyvi diena","aktyvios dienos","aktyvių dienų") + " iš viso");
   tile(sp.length, plural(sp.length,"veikla","veiklos","veiklų"));
   tile(wins ? `👑 ${wins}` : "0", plural(wins,"kartą savaitės lyderis","kartus savaitės lyderis","kartų savaitės lyderis"));
   tile(fmt(bonusPts), "taškų iš bonusų");

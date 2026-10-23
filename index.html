@@ -13,7 +13,7 @@
   --bg:#F2F5F7; --surface:#FFFFFF; --ink:#0E1A24; --muted:#5B6B78; --line:#D9E1E7;
   --accent:#E2541B; --accent-ink:#FFFFFF; --band:#0E1A24; --band-ink:#EAF0F4; --band-muted:#8EA2B1;
   --good:#1F8A5B; --bad:#C2372B; --star:#F2A900;
-  --a1:#E2541B; --a2:#1C6DD0; --a3:#1F8A5B; --a4:#9B3FCB; --a5:#C9930A; --a6:#D0347A;
+  --p0:#E2541B; --p1:#1C6DD0; --p2:#1F8A5B; --p3:#9B3FCB; --p4:#C9930A; --p5:#D0347A; --p6:#C62828; --p7:#0E9AA7; --p8:#8D5A2B; --p9:#3A4652;
   --f-display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
   --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
@@ -22,13 +22,13 @@
   --bg:#0B131A; --surface:#121D26; --ink:#E6EDF2; --muted:#8FA1AF; --line:#22313D;
   --accent:#FF7440; --accent-ink:#1A0A03; --band:#060B10; --band-ink:#EAF0F4; --band-muted:#7E93A3;
   --good:#3CC48A; --bad:#FF6B5E; --star:#FFC933;
-  --a1:#FF7440; --a2:#5AA2FF; --a3:#3CC48A; --a4:#C37BF0; --a5:#F2C23D; --a6:#FF6FAE;
+  --p0:#FF7440; --p1:#5AA2FF; --p2:#3CC48A; --p3:#C37BF0; --p4:#F2C23D; --p5:#FF6FAE; --p6:#FF5A5A; --p7:#3FD0DB; --p8:#C98B55; --p9:#A7B4C0;
   color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0B131A; --surface:#121D26; --ink:#E6EDF2; --muted:#8FA1AF; --line:#22313D;
   --accent:#FF7440; --accent-ink:#1A0A03; --band:#060B10; --band-ink:#EAF0F4; --band-muted:#7E93A3;
   --good:#3CC48A; --bad:#FF6B5E; --star:#FFC933;
-  --a1:#FF7440; --a2:#5AA2FF; --a3:#3CC48A; --a4:#C37BF0; --a5:#F2C23D; --a6:#FF6FAE;
+  --p0:#FF7440; --p1:#5AA2FF; --p2:#3CC48A; --p3:#C37BF0; --p4:#F2C23D; --p5:#FF6FAE; --p6:#FF5A5A; --p7:#3FD0DB; --p8:#C98B55; --p9:#A7B4C0;
   color-scheme:dark}
 
 *{box-sizing:border-box}
@@ -127,6 +127,18 @@ button{font:inherit;cursor:pointer;border-radius:4px}
 .logout:hover{color:var(--band-ink);border-color:var(--band-ink)}
 .posting-as{grid-column:1 / -1;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
 .posting-as b{color:var(--ink)}
+
+.swatches{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
+.sw{display:flex;align-items:center;gap:12px;min-width:0;background:color-mix(in srgb,var(--band-ink) 7%,transparent);border:2px solid color-mix(in srgb,var(--band-ink) 14%,transparent);color:var(--band-ink);padding:12px;border-radius:6px;text-align:left;font:inherit}
+.sw .chip{width:30px;height:30px;border-radius:50%;flex:none}
+.sw .nm{display:flex;flex-direction:column;min-width:0;line-height:1.2}
+.sw .nm b{font-family:var(--f-display);font-weight:800;font-size:19px;text-transform:uppercase;letter-spacing:.02em}
+.sw .nm small{font-size:12px;color:var(--band-muted)}
+.sw:hover:not(:disabled),.sw:focus-visible{border-color:var(--band-ink)}
+.sw.mine{border-color:var(--band-ink);background:color-mix(in srgb,var(--band-ink) 14%,transparent)}
+.sw:disabled{opacity:.38;cursor:not-allowed}
+.login-msg{min-height:1.2em;color:#FF8A80 !important}
+.back{align-self:flex-start;margin-top:6px;font-size:13px;padding:6px 12px}
 
 /* Chat */
 .chat{background:var(--surface);border:1px solid var(--line);border-radius:6px;display:flex;flex-direction:column}
@@ -250,9 +262,18 @@ dialog::backdrop{background:rgba(6,11,16,.55)}
   <div class="login-in">
     <div class="eyebrow">Žiemos lyga · 2026 10 22 – 2027 03 01</div>
     <h1>Sporto Lyga <span>2027</span></h1>
-    <h2 id="login-h">Kas tu?</h2>
-    <p>Pasirink savo vardą. Jis bus automatiškai pridėtas prie tavo veiklų, bonusų ir žinučių. Šiame įrenginyje vardą įsiminsime.</p>
-    <div class="login-grid" id="login-grid"></div>
+    <div id="step-name">
+      <h2 id="login-h">Kas tu?</h2>
+      <p>Pasirink savo vardą. Jis bus automatiškai pridėtas prie tavo veiklų, bonusų ir žinučių. Šiame įrenginyje vardą įsiminsime.</p>
+      <div class="login-grid" id="login-grid"></div>
+    </div>
+    <div id="step-color" hidden>
+      <h2 id="color-h"></h2>
+      <p>Ši spalva tave žymės lentelėje, grafike, kalendoriuje ir pokalbiuose. Kiekvienas turi skirtingą spalvą.</p>
+      <div class="swatches" id="swatches"></div>
+      <p class="login-msg" id="login-msg" role="status"></p>
+      <button type="button" class="logout back" id="color-back">← Atgal</button>
+    </div>
   </div>
 </div>
 
@@ -333,7 +354,17 @@ const API_URL = "https://script.google.com/macros/s/AKfycbzSbysdNwLBeLb-04gG1ns0
 /* ====================== */
 
 const ATHLETES = ["Edvinas","Tomas","Vygantas","Justas","Paulius","Eduardas"];
-const COLORS = ["--a1","--a2","--a3","--a4","--a5","--a6"];
+const PALETTE_NAMES = ["Oranžinė","Mėlyna","Žalia","Violetinė","Geltona","Rožinė","Raudona","Žydra","Ruda","Grafito"];
+let PLAYER_COLORS = {}, colorsSupported = false;
+/* Žaidėjo spalva: pasirinkta (iš lentelės) arba numatytoji, jei ji dar laisva */
+function colorIdx(name){
+  const c = PLAYER_COLORS[name]; if(c) return Number(c.slice(1));
+  const taken = new Set(Object.entries(PLAYER_COLORS).filter(([n])=>n!==name).map(([,v])=>Number(v.slice(1))));
+  let i = ATHLETES.indexOf(name); if(!taken.has(i)) return i;
+  for(let k=0;k<PALETTE_NAMES.length;k++) if(!taken.has(k)) return k;
+  return 0;
+}
+function col(name){ return `var(--p${colorIdx(name)})`; }
 // unit: km arba min; pts skiriama už `per` vienetų
 const SPORTS = [
   {id:"run",    name:"Bėgimas",           unit:"km",  per:1,  pts:1},
@@ -430,6 +461,10 @@ async function refresh(){
       .map(m=>({...m, likes:(Array.isArray(m.likes)?m.likes:[]).filter(n=>ATHLETES.includes(n))}));
     likesSupported = data.likesV === 1;
     reactSupported = data.reactV === 1;
+    colorsSupported = data.colorsV === 1;
+    PLAYER_COLORS = Object.fromEntries(Object.entries(data.colors||{}).filter(([n,v])=>ATHLETES.includes(n) && /^p\d$/.test(v)));
+    if(ME) $("me-dot").style.background = col(ME);
+    if(!$("login").hidden) renderLoginStep();
     lsSet("sl27-cache", JSON.stringify(entries));
     const n = entries.filter(e=>e.sport!=="bonus").length;
     $("status").textContent = n ? `${n} ${plural(n,"veikla","veiklos","veiklų")} · atnaujinama automatiškai` : "Laukiama pirmos veiklos";
@@ -508,7 +543,7 @@ function renderBoard(all){
     if(r.pts !== prev){ rank = k+1; prev = r.pts; }
     const row = document.createElement("div");
     row.className = "row" + (rank===1 && r.pts>0 ? " lead" : "");
-    const color = `var(${COLORS[r.i]})`;
+    const color = col(r.a);
     const parts = Object.entries(r.sports).sort((x,y)=>y[1].pts-x[1].pts).slice(0,3).map(([id,v])=>SPORT[id].name.split(" /")[0]+" "+amountText(id,v.amount));
     if(r.bonus) parts.push(`★ bonusai +${tsk(r.bonus)}`);
     row.innerHTML = `<div class="rank"></div><div class="who"><span class="dot"></span><span class="nm"></span></div>
@@ -605,7 +640,7 @@ function renderCalendar(all){
     btn.setAttribute("aria-label", `${prettyDate(ds)}${bonusOn(ds)?(ds===nextB?", artimiausia bonuso diena":", bonuso diena"):""}${who.length?", sportavo: "+who.join(", "):""}`);
     btn.innerHTML = `<span class="dn">${d}</span><span class="dots"></span>`;
     const dots = btn.querySelector(".dots");
-    who.forEach(a=>{ const i=document.createElement("i"); i.style.background=`var(${COLORS[ATHLETES.indexOf(a)]})`; dots.append(i); });
+    who.forEach(a=>{ const i=document.createElement("i"); i.style.background=col(a); dots.append(i); });
     btn.addEventListener("click",()=>{ calSel = ds; renderCalendar(items()); });
     grid.append(btn);
   }
@@ -620,7 +655,7 @@ function renderCalendar(all){
   for(const it of dayItems){
     const li = document.createElement("li");
     li.innerHTML = '<span><i class="dot"></i><span></span></span><b></b>';
-    li.querySelector(".dot").style.background = `var(${COLORS[ATHLETES.indexOf(it.athlete)]})`;
+    li.querySelector(".dot").style.background = col(it.athlete);
     li.querySelector("span span").textContent = it.kind==="bonus" ? `${it.athlete} · ★ ${it.b.title}` : `${it.athlete} · ${SPORT[it.e.sport].name} ${amountText(it.e.sport,it.e.amount)}`;
     li.querySelector("b").textContent = "+"+fmt(it.pts);
     ul.append(li);
@@ -649,7 +684,7 @@ function renderChart(all){
   const t = todayStr();
   const chart = $("chart"), legend = $("legend");
   legend.innerHTML = "";
-  ATHLETES.forEach((a,i)=>{ const s=document.createElement("span"); s.innerHTML='<span class="dot"></span>'; s.firstChild.style.background=`var(${COLORS[i]})`; s.append(a); legend.append(s); });
+  ATHLETES.forEach((a,i)=>{ const s=document.createElement("span"); s.innerHTML='<span class="dot"></span>'; s.firstChild.style.background=col(a); s.append(a); legend.append(s); });
   if(all.length === 0){
     chart.innerHTML = '<div class="empty">Taškų dar nėra. Užregistruok pirmą veiklą ir lenktynės prasidės.</div>';
     return;
@@ -680,8 +715,8 @@ function renderChart(all){
   });
   cum.forEach((c,i)=>{
     const pts = c.slice(0,last+1).map((v,d)=>`${x(d).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
-    svg += `<polyline points="${pts}" fill="none" stroke="var(${COLORS[i]})" stroke-width="2.25" stroke-linejoin="round" stroke-linecap="round"/>`;
-    svg += `<circle cx="${x(last)}" cy="${y(c[last])}" r="3.5" fill="var(${COLORS[i]})"/>`;
+    svg += `<polyline points="${pts}" fill="none" stroke="${col(ATHLETES[i])}" stroke-width="2.25" stroke-linejoin="round" stroke-linecap="round"/>`;
+    svg += `<circle cx="${x(last)}" cy="${y(c[last])}" r="3.5" fill="${col(ATHLETES[i])}"/>`;
   });
   chart.innerHTML = svg + "</svg>";
 }
@@ -849,7 +884,7 @@ function renderChat(){
     const li = document.createElement("li");
     li.innerHTML = '<span class="av"></span><div class="bubble"><div class="hd"><span class="nm"></span><span class="tm"></span><span class="rm"></span></div><div class="tx"></div><div class="likes"></div></div>';
     const ci = ATHLETES.indexOf(m.athlete);
-    li.querySelector(".av").style.background = `var(${COLORS[ci]})`;
+    li.querySelector(".av").style.background = col(m.athlete);
     li.querySelector(".av").textContent = m.athlete.charAt(0);
     li.querySelector(".nm").textContent = m.athlete;
     li.querySelector(".tm").textContent = chatTime(m.createdAt);
@@ -929,27 +964,72 @@ async function removeChat(id){
   finally{ busy = false; refresh(); }
 }
 
-/* ---------- Prisijungimas (be slaptažodžio) ---------- */
-function setupLogin(){
-  const grid = $("login-grid");
-  ATHLETES.forEach((a,i)=>{
-    const b = document.createElement("button"); b.type = "button";
-    b.innerHTML = '<span class="dot"></span><span></span>';
-    b.firstChild.style.background = `var(${COLORS[i]})`; b.lastChild.textContent = a;
-    b.addEventListener("click",()=>login(a));
-    grid.append(b);
+/* ---------- Prisijungimas (be slaptažodžio): vardas → spalva ---------- */
+const ME_KEY = "sl27-user-v2";   // naujas raktas: visi turi prisijungti iš naujo
+let pickName = null;
+function showLogin(){ pickName = null; $("login").hidden = false; document.body.style.overflow="hidden"; renderLoginStep(); }
+function renderLoginStep(){
+  $("step-name").hidden = !!pickName; $("step-color").hidden = !pickName;
+  if(!pickName){
+    const grid = $("login-grid"); grid.innerHTML = "";
+    ATHLETES.forEach(a=>{
+      const b = document.createElement("button"); b.type = "button";
+      b.innerHTML = '<span class="dot"></span><span></span>';
+      b.firstChild.style.background = PLAYER_COLORS[a] ? col(a) : "transparent";
+      if(!PLAYER_COLORS[a]) b.firstChild.style.boxShadow = "inset 0 0 0 2px currentColor";
+      b.lastChild.textContent = a;
+      b.addEventListener("click",()=>{ pickName = a; $("login-msg").textContent = ""; renderLoginStep(); });
+      grid.append(b);
+    });
+    return;
+  }
+  $("color-h").textContent = `${pickName}, pasirink spalvą`;
+  const wrap = $("swatches"); wrap.innerHTML = "";
+  const owner = {}; Object.entries(PLAYER_COLORS).forEach(([n,v])=>owner[Number(v.slice(1))] = n);
+  PALETTE_NAMES.forEach((nm,k)=>{
+    const by = owner[k], mine = by===pickName, taken = by && !mine;
+    const b = document.createElement("button"); b.type = "button"; b.className = "sw"+(mine?" mine":"");
+    b.disabled = !!taken;
+    b.innerHTML = '<span class="chip"></span><span class="nm"><b></b><small></small></span>';
+    b.querySelector(".chip").style.background = `var(--p${k})`;
+    b.querySelector("b").textContent = nm;
+    b.querySelector("small").textContent = taken ? `Užimta: ${by}` : mine ? "Tavo dabartinė" : "Laisva";
+    b.addEventListener("click",()=>chooseColor(pickName, "p"+k));
+    wrap.append(b);
   });
-  $("logout").addEventListener("click",()=>{ $("login").hidden = false; document.body.style.overflow="hidden"; grid.querySelector("button").focus(); });
-  const saved = lsGet("sl27-me");
+}
+async function chooseColor(name, c){
+  const msg = $("login-msg"); msg.textContent = "";
+  const prev = PLAYER_COLORS[name];
+  PLAYER_COLORS = {...PLAYER_COLORS, [name]: c};
+  if(colorsSupported){
+    document.querySelectorAll(".sw").forEach(b=>b.disabled = true);
+    busy = true;
+    try{ await apiPost({action:"color", athlete:name, color:c}); }
+    catch(e){
+      PLAYER_COLORS = {...PLAYER_COLORS}; if(prev) PLAYER_COLORS[name]=prev; else delete PLAYER_COLORS[name];
+      busy = false;
+      msg.textContent = String(e.message)==="taken" ? "Šią spalvą ką tik pasirinko kitas žaidėjas. Pasirink kitą." : "Nepavyko išsaugoti spalvos. Bandyk dar kartą.";
+      await refresh(); renderLoginStep(); return;
+    }
+    busy = false;
+  }
+  login(name);
+  refresh();
+}
+function setupLogin(){
+  $("logout").addEventListener("click", showLogin);
+  $("color-back").addEventListener("click",()=>{ pickName = null; renderLoginStep(); });
+  const saved = lsGet(ME_KEY);
   if(saved && ATHLETES.includes(saved)) login(saved, true);
-  else { $("login").hidden = false; document.body.style.overflow="hidden"; }
+  else showLogin();
 }
 function login(name, silent){
-  ME = name; lsSet("sl27-me", name);
+  ME = name; lsSet(ME_KEY, name);
   $("login").hidden = true; document.body.style.overflow="";
   $("whoami").hidden = false;
   $("me-name").textContent = name;
-  $("me-dot").style.background = `var(${COLORS[ATHLETES.indexOf(name)]})`;
+  $("me-dot").style.background = col(name);
   document.querySelectorAll(".posting-as b").forEach(b=>b.textContent = name);
   pendingDelete = null; pendingChatDelete = null; lastChatKey = "";
   if(!silent) renderAll();

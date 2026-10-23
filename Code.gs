@@ -10,6 +10,8 @@ const ATHLETES = ['Edvinas', 'Tomas', 'Vygantas', 'Justas', 'Paulius', 'Eduardas
 // Veiklų sąrašas tikrinamas programėlėje, todėl keičiant veiklas šio kodo keisti nereikia.
 const HEADERS = ['id', 'athlete', 'sport', 'amount', 'date', 'note', 'createdAt', 'reactions'];
 const REACTIONS = ['💪', '🤯', '🖕', '👍'];
+// Mažiausia užskaitoma veikla (km arba min.)
+const MINS = { run: 3, walk: 3, bike: 10, swim: 0.3, gym: 15, padel: 15, basket: 15, hiit: 15, ski: 15, other: 15 };
 
 // Reakcijos saugomos H stulpelyje: "Vardas:emoji,Vardas:emoji"
 function parseReactions_(v) {
@@ -139,6 +141,7 @@ function doPost(e) {
       if (ATHLETES.indexOf(body.athlete) < 0) return json_({ ok: false, error: 'athlete' });
       if (!/^[a-z]{2,12}$/.test(String(body.sport))) return json_({ ok: false, error: 'sport' });
       if (!(amount > 0) || amount > 720) return json_({ ok: false, error: 'amount' });
+      if (MINS[body.sport] != null && amount < MINS[body.sport] - 1e-9) return json_({ ok: false, error: 'too_short' });
       // Ateities datų neleidžiama (+1 d. atsarga dėl laiko juostų)
       const tomorrow = Utilities.formatDate(new Date(Date.now() + 864e5), SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone(), 'yyyy-MM-dd');
       if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > tomorrow) return json_({ ok: false, error: 'date' });

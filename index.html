@@ -121,6 +121,9 @@ button{font:inherit;cursor:pointer;border-radius:4px}
 .primary:disabled{opacity:.45;cursor:not-allowed}
 .msg{grid-column:1 / -1;font-size:13.5px;min-height:1.2em;margin:0}
 .msg.ok{color:var(--good)} .msg.err{color:var(--bad)}
+.warn{grid-column:1 / -1;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;background:color-mix(in srgb,var(--star) 16%,var(--surface));border:1px solid color-mix(in srgb,var(--star) 55%,transparent);border-radius:8px;padding:10px 12px;font-size:14px}
+.warn span{flex:1 1 220px;min-width:0}
+.fix{background:var(--ink);color:var(--bg);border:0;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;white-space:nowrap}
 
 /* Feed */
 .feed{list-style:none;margin:0;padding:0 14px;display:flex;flex-direction:column}
@@ -228,7 +231,7 @@ dialog::backdrop{background:rgba(6,11,16,.55)}
 .close{background:none;border:0;color:var(--muted);font-size:28px;line-height:1;padding:0 4px}
 @media (prefers-reduced-motion:reduce){.bar i{transition:none}}
 
-/* Savaitės čempionas */
+/* Savaitės lyderis */
 .week{display:flex;flex-direction:column;gap:12px}
 .champ{display:flex;align-items:center;gap:12px}
 .crown{font-size:30px;line-height:1}
@@ -354,7 +357,7 @@ dialog::backdrop{background:rgba(6,11,16,.55)}
       <p class="hint">Paspausk ant vardo – pamatysi statistiką.</p>
     </section>
     <section aria-labelledby="h-week">
-      <div class="h2row"><h2 id="h-week">Savaitės čempionas</h2><span class="weekrange" id="week-range"></span></div>
+      <div class="h2row"><h2 id="h-week">Savaitės lyderis</h2><span class="weekrange" id="week-range"></span></div>
       <div class="card week" id="week"></div>
     </section>
     <section aria-labelledby="h-race">
@@ -383,6 +386,7 @@ dialog::backdrop{background:rgba(6,11,16,.55)}
           <label><span id="f-unit">Atstumas (km)</span><input id="f-amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="10" required></label>
           <label>Data<input id="f-date" type="date" required></label>
           <label class="full"><span id="f-note-l">Pastaba (neprivaloma)</span><input id="f-note" type="text" maxlength="80"></label>
+          <div class="warn" id="f-warn" role="status" hidden><span id="f-warn-t"></span><button type="button" class="fix" id="f-fix" hidden></button></div>
           <div class="preview"><div class="rule" id="f-rule"></div><div class="val" id="f-pts">0</div></div>
           <button class="primary" id="f-submit" type="submit">Pridėti taškus</button>
           <p class="msg" id="f-msg" role="status"></p>
@@ -887,8 +891,31 @@ function setupForm(){
 let confirmSig = null;
 /* Įprastos ribos vienai veiklai: viršijus – paprašoma patvirtinti */
 const LIMITS = {run:45, walk:40, bike:200, swim:6, gym:180, padel:240, basket:180, hiit:150, ski:360, other:240};
+/* Tikrinimas rašant: ar skaičius atrodo tikėtinas (pvz., 1,5 vietoj 90 min., metrai vietoj km) */
+function checkAmount(sport, amount){
+  const s = SPORT[sport]; if(!s || !(amount>0)) return null;
+  if(s.unit==="min"){
+    if(amount < 10) return {text:`${fmt(amount)} min. – labai trumpa treniruotė. Gal turėjai omeny ${fmt(amount)} val.?`, fix:Math.round(amount*60), fixText:`Pataisyti į ${Math.round(amount*60)} min.`};
+    if(!Number.isInteger(amount)) return {text:"Trukmę rašyk minutėmis, sveiku skaičiumi.", fix:Math.round(amount), fixText:`Pataisyti į ${Math.round(amount)} min.`};
+  }
+  if(sport==="swim" && amount >= 100) return {text:`${fmt(amount)} km plaukimo? Atrodo, kad įvedei metrais.`, fix:Math.round(amount)/1000, fixText:`Pataisyti į ${fmt(amount/1000)} km`};
+  if((sport==="run" || sport==="walk") && amount >= 1000) return {text:`${fmt(amount)} km? Atrodo, kad įvedei metrais arba žingsniais.`, fix:Math.round(amount/10)/100, fixText:`Pataisyti į ${fmt(amount/1000)} km`};
+  const lim = LIMITS[sport] || (s.unit==="km" ? 60 : 240);
+  if(amount > lim) return {text:`${amountText(sport, amount)} – daugiau nei įprasta vienai veiklai. Pasitikrink.`};
+  return null;
+}
+function updateWarn(){
+  const sport = $("f-sport").value, amount = parseFloat(String($("f-amount").value).replace(",", "."));
+  const w = checkAmount(sport, amount);
+  $("f-warn").hidden = !w;
+  if(!w) return;
+  $("f-warn-t").textContent = w.text;
+  const fx = $("f-fix"); fx.hidden = w.fix == null;
+  if(w.fix != null){ fx.textContent = w.fixText; fx.onclick = ()=>{ $("f-amount").value = String(w.fix); updatePreview(); $("f-amount").focus(); }; }
+}
 function updatePreview(){
   if(confirmSig){ confirmSig = null; $("f-submit").textContent = "Pridėti taškus"; say(""); }
+  updateWarn();
   const needNote = $("f-sport").value === "other";
   $("f-note-l").textContent = needNote ? "Pastaba (privaloma) – kokia veikla?" : "Pastaba (neprivaloma)";
   $("f-note").required = needNote;
@@ -908,12 +935,11 @@ async function onSubmit(ev){
   if(!athlete) return say("Pirmiausia prisijunk – pasirink savo vardą.","err");
   if(!(amount>0)) return say(km ? "Įvesk atstumą kilometrais." : "Įvesk, kiek minučių sportavai.","err");
   if(km ? amount>300 : amount>720) return say("Skaičius per didelis vienai veiklai. Pasitikrink.","err");
-  const lim = LIMITS[sport] || (km ? 60 : 240);
   const sig = [sport, amount, date].join("|");
-  if(amount > lim && confirmSig !== sig){
+  if(checkAmount(sport, amount) && confirmSig !== sig){
     confirmSig = sig;
     $("f-submit").textContent = "Taip, viskas teisinga";
-    return say(`Ar tikrai ${amountText(sport, amount)} (${SPORT[sport].name.toLowerCase()})? Tai daugiau nei įprasta vienai veiklai. Jei teisingai – spausk dar kartą.`, "err");
+    return say(`Ar tikrai ${amountText(sport, amount)} (${SPORT[sport].name.toLowerCase()})? Jei teisingai – spausk dar kartą.`, "err");
   }
   if(sport==="other" && note.length < 3){ $("f-note").focus(); return say("Parašyk pastaboje, kokia tai buvo veikla.","err"); }
   if(!date) return say("Pasirink datą.","err");
@@ -924,7 +950,7 @@ async function onSubmit(ev){
   try{
     await apiPost({action:"add", athlete, sport, amount, date, note});
     say(`Užskaityta: +${tsk(pointsOf(sport,amount))} (${athlete})`,"ok");
-    $("f-amount").value=""; $("f-note").value=""; updatePreview();
+    $("f-amount").value=""; $("f-note").value=""; updatePreview(); $("f-warn").hidden = true;
   }catch(_){
     say("Nepavyko išsaugoti. Patikrink ryšį ir bandyk dar kartą.","err");
   }finally{ $("f-submit").disabled = false; busy = false; refresh(); }
@@ -1264,7 +1290,7 @@ function streakOf(name){
   return {current:cur, best, days:days.size};
 }
 
-/* ---------- Savaitės čempionas (pirmadienis–sekmadienis) ---------- */
+/* ---------- Savaitės lyderis (pirmadienis–sekmadienis) ---------- */
 function weekStart(ds){ const d = new Date(ds+"T12:00:00Z"); const k = (d.getUTCDay()+6)%7; return addDays(ds,-k); }
 function weekTotals(all, ws){
   const we = addDays(ws,6), tot = {};
@@ -1312,7 +1338,7 @@ function renderWeek(all){
   if(prevWs >= weekStart(START)){
     const pw = weekTotals(all, prevWs);
     const lw = document.createElement("div"); lw.className = "lastweek";
-    lw.textContent = pw.length ? `Praėjusios savaitės čempionas: ${pw[0][0]} (${tsk(pw[0][1])})` : "Praėjusią savaitę taškų niekas nesurinko.";
+    lw.textContent = pw.length ? `Praėjusios savaitės lyderis: ${pw[0][0]} (${tsk(pw[0][1])})` : "Praėjusią savaitę taškų niekas nesurinko.";
     box.append(lw);
   }
 }
@@ -1345,7 +1371,7 @@ function renderStats(name){
   tile(st.best, "ilgiausia serija");
   tile(st.days, plural(st.days,"aktyvi diena","aktyvios dienos","aktyvių dienų"));
   tile(sp.length, plural(sp.length,"veikla","veiklos","veiklų"));
-  tile(wins ? `👑 ${wins}` : "0", "savaitės laimėjimai");
+  tile(wins ? `👑 ${wins}` : "0", plural(wins,"kartą savaitės lyderis","kartus savaitės lyderis","kartų savaitės lyderis"));
   tile(fmt(bonusPts), "taškų iš bonusų");
   body.append(tiles);
   // Savaitės

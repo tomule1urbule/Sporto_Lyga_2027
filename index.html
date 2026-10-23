@@ -357,7 +357,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbzSbysdNwLBeLb-04gG1ns0
 
 const ATHLETES = ["Edvinas","Tomas","Vygantas","Justas","Paulius","Eduardas","Dainius"];
 const PALETTE_NAMES = ["Oranžinė","Mėlyna","Žalia","Violetinė","Geltona","Rožinė","Raudona","Žydra","Ruda","Grafito","Salotinė","Tamsiai mėlyna","Bordo","Koralinė","Alyvinė","Smaragdinė","Alyvuogių","Purpurinė"];
-let PLAYER_COLORS = {}, colorsSupported = false;
+let PLAYER_COLORS = {}, colorsSupported = true, dataReady = false;
 /* Žaidėjo spalva: pasirinkta (iš lentelės) arba numatytoji, jei ji dar laisva */
 function colorIdx(name){
   const c = PLAYER_COLORS[name]; if(c && Number(c.slice(1)) < PALETTE_NAMES.length) return Number(c.slice(1));
@@ -459,6 +459,18 @@ async function refresh(){
   if(busy) return;
   try{
     const data = await apiLoad();
+    applyData(data);
+    lsSet("sl27-data", JSON.stringify(data));
+    const n = entries.filter(e=>e.sport!=="bonus").length;
+    $("status").textContent = n ? `${n} ${plural(n,"veikla","veiklos","veiklų")} · atnaujinama automatiškai` : "Laukiama pirmos veiklos";
+    renderAll();
+  }catch(_){
+    $("status").textContent = "Nepavyko prisijungti prie lygos. Bandoma iš naujo…";
+  }
+}
+/* Pritaiko serverio duomenis (ir iš talpyklos, kad po perkrovimo iškart rodytų teisingas spalvas ir žaidėjus) */
+function applyData(data){
+    dataReady = true;
     entries = clean(data.entries);
     chatSupported = Array.isArray(data.messages);
     messages = (data.messages||[]).filter(m=>m && m.id && ATHLETES.includes(m.athlete) && m.text)
@@ -469,13 +481,6 @@ async function refresh(){
     PLAYER_COLORS = Object.fromEntries(Object.entries(data.colors||{}).filter(([n,v])=>ATHLETES.includes(n) && /^p\d{1,2}$/.test(v)));
     if(ME) $("me-dot").style.background = col(ME);
     if(!$("login").hidden) renderLoginStep();
-    lsSet("sl27-cache", JSON.stringify(entries));
-    const n = entries.filter(e=>e.sport!=="bonus").length;
-    $("status").textContent = n ? `${n} ${plural(n,"veikla","veiklos","veiklų")} · atnaujinama automatiškai` : "Laukiama pirmos veiklos";
-    renderAll();
-  }catch(_){
-    $("status").textContent = "Nepavyko prisijungti prie lygos. Bandoma iš naujo…";
-  }
 }
 
 /* ---------- Taškų elementai: veiklos + bonusai ----------
@@ -1043,14 +1048,14 @@ function login(name, silent){
   $("login").hidden = true; document.body.style.overflow="";
   $("whoami").hidden = false;
   $("me-name").textContent = name;
-  $("me-dot").style.background = col(name);
+  $("me-dot").style.background = dataReady ? col(name) : "transparent";
   document.querySelectorAll(".posting-as b").forEach(b=>b.textContent = name);
   pendingDelete = null; pendingChatDelete = null; lastChatKey = "";
   if(!silent) renderAll();
 }
 
 /* ---------- Paleidimas ---------- */
-try{ const c = JSON.parse(lsGet("sl27-cache")||"[]"); entries = clean(c); }catch(_){}
+try{ const c = JSON.parse(lsGet("sl27-data")||"null"); if(c && c.ok) applyData(c); }catch(_){}
 renderRules(); setupForm(); setupChat(); setupLogin();
 (()=>{ const d=$("rules-dlg");
   $("info-btn").addEventListener("click",()=>{ if(d.showModal) d.showModal(); else d.setAttribute("open",""); });

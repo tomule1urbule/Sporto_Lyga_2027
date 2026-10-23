@@ -17,7 +17,7 @@ function parseReactions_(v) {
   String(v || '').split(',').filter(Boolean).forEach(p => { const i = p.indexOf(':'); if (i > 0) out[p.slice(0, i)] = p.slice(i + 1); });
   return out;
 }
-// Žaidėjų spalvos saugomos skripto nustatymuose (p0–p9)
+// Žaidėjų spalvos saugomos skripto nustatymuose (p0–p17)
 const COLORS_KEY = 'colors_v2';
 function colors_() { try { return JSON.parse(PropertiesService.getScriptProperties().getProperty(COLORS_KEY) || '{}'); } catch (e) { return {}; } }
 const CHAT_SHEET = 'Pokalbiai';
@@ -161,7 +161,7 @@ function doPost(e) {
     if (body.action === 'color') {
       if (ATHLETES.indexOf(body.athlete) < 0) return json_({ ok: false, error: 'athlete' });
       const color = String(body.color || '');
-      if (!/^p\d$/.test(color)) return json_({ ok: false, error: 'color' });
+      if (!/^p\d{1,2}$/.test(color) || Number(color.slice(1)) > 17) return json_({ ok: false, error: 'color' });
       const all = colors_();
       for (const n in all) { if (n !== body.athlete && all[n] === color) return json_({ ok: false, error: 'taken' }); }
       all[body.athlete] = color;

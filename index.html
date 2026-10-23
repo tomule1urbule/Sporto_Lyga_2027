@@ -13,7 +13,7 @@
   --bg:#F2F5F7; --surface:#FFFFFF; --ink:#0E1A24; --muted:#5B6B78; --line:#D9E1E7;
   --accent:#E2541B; --accent-ink:#FFFFFF; --band:#0E1A24; --band-ink:#EAF0F4; --band-muted:#8EA2B1;
   --good:#1F8A5B; --bad:#C2372B; --star:#F2A900;
-  --p0:#E2541B; --p1:#1C6DD0; --p2:#1F8A5B; --p3:#9B3FCB; --p4:#C9930A; --p5:#D0347A; --p6:#C62828; --p7:#0E9AA7; --p8:#8D5A2B; --p9:#3A4652;
+  --p0:#E2541B; --p1:#1C6DD0; --p2:#1F8A5B; --p3:#9B3FCB; --p4:#C9930A; --p5:#D0347A; --p6:#C62828; --p7:#0E9AA7; --p8:#8D5A2B; --p9:#3A4652; --p10:#5E8F12; --p11:#233F8F; --p12:#8E1D3B; --p13:#E0705A; --p14:#7A6BC9; --p15:#0B6E5F; --p16:#7A6E12; --p17:#B0179B;
   --f-display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
   --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
@@ -22,13 +22,13 @@
   --bg:#0B131A; --surface:#121D26; --ink:#E6EDF2; --muted:#8FA1AF; --line:#22313D;
   --accent:#FF7440; --accent-ink:#1A0A03; --band:#060B10; --band-ink:#EAF0F4; --band-muted:#7E93A3;
   --good:#3CC48A; --bad:#FF6B5E; --star:#FFC933;
-  --p0:#FF7440; --p1:#5AA2FF; --p2:#3CC48A; --p3:#C37BF0; --p4:#F2C23D; --p5:#FF6FAE; --p6:#FF5A5A; --p7:#3FD0DB; --p8:#C98B55; --p9:#A7B4C0;
+  --p0:#FF7440; --p1:#5AA2FF; --p2:#3CC48A; --p3:#C37BF0; --p4:#F2C23D; --p5:#FF6FAE; --p6:#FF5A5A; --p7:#3FD0DB; --p8:#C98B55; --p9:#A7B4C0; --p10:#A3D94B; --p11:#7C9BFF; --p12:#E06A8C; --p13:#FF9A85; --p14:#B3A6FF; --p15:#34C3A8; --p16:#CFC04A; --p17:#F062DA;
   color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0B131A; --surface:#121D26; --ink:#E6EDF2; --muted:#8FA1AF; --line:#22313D;
   --accent:#FF7440; --accent-ink:#1A0A03; --band:#060B10; --band-ink:#EAF0F4; --band-muted:#7E93A3;
   --good:#3CC48A; --bad:#FF6B5E; --star:#FFC933;
-  --p0:#FF7440; --p1:#5AA2FF; --p2:#3CC48A; --p3:#C37BF0; --p4:#F2C23D; --p5:#FF6FAE; --p6:#FF5A5A; --p7:#3FD0DB; --p8:#C98B55; --p9:#A7B4C0;
+  --p0:#FF7440; --p1:#5AA2FF; --p2:#3CC48A; --p3:#C37BF0; --p4:#F2C23D; --p5:#FF6FAE; --p6:#FF5A5A; --p7:#3FD0DB; --p8:#C98B55; --p9:#A7B4C0; --p10:#A3D94B; --p11:#7C9BFF; --p12:#E06A8C; --p13:#FF9A85; --p14:#B3A6FF; --p15:#34C3A8; --p16:#CFC04A; --p17:#F062DA;
   color-scheme:dark}
 
 *{box-sizing:border-box}
@@ -115,7 +115,7 @@ button{font:inherit;cursor:pointer;border-radius:4px}
 
 /* Login */
 .login{position:fixed;inset:0;z-index:50;background:var(--band);color:var(--band-ink);overflow-y:auto;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-.login-in{max-width:520px;margin:0 auto;padding-block:min(14vh,110px) 40px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:10px}
+.login-in{max-width:620px;margin:0 auto;padding-block:min(14vh,110px) 40px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:10px}
 .login h2{font-family:var(--f-display);font-weight:800;font-size:30px;text-transform:uppercase;margin:26px 0 0;color:var(--band-ink)}
 .login p{margin:0;color:var(--band-muted);font-size:15px}
 .login-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
@@ -128,11 +128,12 @@ button{font:inherit;cursor:pointer;border-radius:4px}
 .posting-as{grid-column:1 / -1;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
 .posting-as b{color:var(--ink)}
 
-.swatches{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
-.sw{display:flex;align-items:center;gap:12px;min-width:0;background:color-mix(in srgb,var(--band-ink) 7%,transparent);border:2px solid color-mix(in srgb,var(--band-ink) 14%,transparent);color:var(--band-ink);padding:12px;border-radius:6px;text-align:left;font:inherit}
-.sw .chip{width:30px;height:30px;border-radius:50%;flex:none}
+.swatches{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:14px}
+@media (min-width:560px){.swatches{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.sw{display:flex;align-items:center;gap:10px;min-width:0;background:color-mix(in srgb,var(--band-ink) 7%,transparent);border:2px solid color-mix(in srgb,var(--band-ink) 14%,transparent);color:var(--band-ink);padding:9px 10px;border-radius:6px;text-align:left;font:inherit}
+.sw .chip{width:26px;height:26px;border-radius:50%;flex:none}
 .sw .nm{display:flex;flex-direction:column;min-width:0;line-height:1.2}
-.sw .nm b{font-family:var(--f-display);font-weight:800;font-size:19px;text-transform:uppercase;letter-spacing:.02em}
+.sw .nm b{font-family:var(--f-display);font-weight:800;font-size:17px;overflow-wrap:anywhere;text-transform:uppercase;letter-spacing:.02em}
 .sw .nm small{font-size:12px;color:var(--band-muted)}
 .sw:hover:not(:disabled),.sw:focus-visible{border-color:var(--band-ink)}
 .sw.mine{border-color:var(--band-ink);background:color-mix(in srgb,var(--band-ink) 14%,transparent)}
@@ -354,11 +355,11 @@ const API_URL = "https://script.google.com/macros/s/AKfycbzSbysdNwLBeLb-04gG1ns0
 /* ====================== */
 
 const ATHLETES = ["Edvinas","Tomas","Vygantas","Justas","Paulius","Eduardas"];
-const PALETTE_NAMES = ["Oranžinė","Mėlyna","Žalia","Violetinė","Geltona","Rožinė","Raudona","Žydra","Ruda","Grafito"];
+const PALETTE_NAMES = ["Oranžinė","Mėlyna","Žalia","Violetinė","Geltona","Rožinė","Raudona","Žydra","Ruda","Grafito","Salotinė","Tamsiai mėlyna","Bordo","Koralinė","Alyvinė","Smaragdinė","Alyvuogių","Purpurinė"];
 let PLAYER_COLORS = {}, colorsSupported = false;
 /* Žaidėjo spalva: pasirinkta (iš lentelės) arba numatytoji, jei ji dar laisva */
 function colorIdx(name){
-  const c = PLAYER_COLORS[name]; if(c) return Number(c.slice(1));
+  const c = PLAYER_COLORS[name]; if(c && Number(c.slice(1)) < PALETTE_NAMES.length) return Number(c.slice(1));
   const taken = new Set(Object.entries(PLAYER_COLORS).filter(([n])=>n!==name).map(([,v])=>Number(v.slice(1))));
   let i = ATHLETES.indexOf(name); if(!taken.has(i)) return i;
   for(let k=0;k<PALETTE_NAMES.length;k++) if(!taken.has(k)) return k;
@@ -462,7 +463,7 @@ async function refresh(){
     likesSupported = data.likesV === 1;
     reactSupported = data.reactV === 1;
     colorsSupported = data.colorsV === 1;
-    PLAYER_COLORS = Object.fromEntries(Object.entries(data.colors||{}).filter(([n,v])=>ATHLETES.includes(n) && /^p\d$/.test(v)));
+    PLAYER_COLORS = Object.fromEntries(Object.entries(data.colors||{}).filter(([n,v])=>ATHLETES.includes(n) && /^p\d{1,2}$/.test(v)));
     if(ME) $("me-dot").style.background = col(ME);
     if(!$("login").hidden) renderLoginStep();
     lsSet("sl27-cache", JSON.stringify(entries));

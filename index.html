@@ -86,6 +86,7 @@ h2{font-family:var(--f-display);font-weight:800;font-size:23px;text-transform:up
 .board{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:2px 14px}
 .row{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer;background:none;border-left:0;border-right:0;border-top:0;border-radius:0;text-align:left;color:inherit;font:inherit;width:100%}
 .row:last-child{border-bottom:0}
+.streak{font-size:12.5px;font-weight:700;color:var(--accent);white-space:nowrap}
 .row:hover .nm{text-decoration:underline;text-underline-offset:3px}
 .rank{font-family:var(--f-display);font-weight:900;font-size:28px;line-height:1;color:var(--muted);font-variant-numeric:tabular-nums}
 .row.lead .rank{color:var(--accent)}
@@ -682,13 +683,15 @@ function renderBoard(all){
     const color = col(r.a);
     const parts = Object.entries(r.sports).sort((x,y)=>y[1].pts-x[1].pts).slice(0,3).map(([id,v])=>SPORT[id].name.split(" /")[0]+" "+amountText(id,v.amount));
     if(r.bonus) parts.push(`★ bonusai +${tsk(r.bonus)}`);
-    row.innerHTML = `<div class="rank"></div><div class="who"><span class="dot"></span><span class="nm"></span></div>
+    row.innerHTML = `<div class="rank"></div><div class="who"><span class="dot"></span><span class="nm"></span><span class="streak"></span></div>
       <div class="pts"><span class="v"></span><small>TŠK</small></div>
       <div class="bar"><i></i></div><div class="mix"></div>`;
     row.querySelector(".rank").textContent = rank;
     row.querySelector(".dot").style.background = color;
     row.querySelector(".nm").textContent = r.a;
-    row.setAttribute("aria-label", `${rank} vieta, ${r.a}, ${tsk(r.pts)}. Atidaryti statistiką`);
+    const st = streakOf(r.a).current;
+    if(st >= 2){ row.querySelector(".streak").textContent = `🔥 ${st}`; row.querySelector(".streak").title = `${st} ${plural(st,"diena","dienos","dienų")} iš eilės`; }
+    row.setAttribute("aria-label", `${rank} vieta, ${r.a}, ${tsk(r.pts)}${st>=2?`, ${st} ${plural(st,"diena","dienos","dienų")} iš eilės`:""}. Atidaryti statistiką`);
     row.querySelector(".v").textContent = fmt(r.pts);
     row.querySelector(".bar i").style.cssText = `width:${r.pts/top*100}%;background:${color}`;
     row.querySelector(".mix").textContent = parts.join(" · ") || "Dar nėra veiklų";

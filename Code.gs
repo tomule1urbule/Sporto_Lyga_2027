@@ -8,7 +8,15 @@
 const SHEET_NAME = 'Veiklos';
 const ATHLETES = ['Edvinas', 'Tomas', 'Vygantas', 'Justas', 'Paulius', 'Eduardas'];
 // Veiklų sąrašas tikrinamas programėlėje, todėl keičiant veiklas šio kodo keisti nereikia.
-const HEADERS = ['id', 'athlete', 'sport', 'amount', 'date', 'note', 'createdAt'];
+const HEADERS = ['id', 'athlete', 'sport', 'amount', 'date', 'note', 'createdAt', 'reactions'];
+const REACTIONS = ['💪', '🤯', '🖕', '👍'];
+
+// Reakcijos saugomos H stulpelyje: "Vardas:emoji,Vardas:emoji"
+function parseReactions_(v) {
+  const out = {};
+  String(v || '').split(',').filter(Boolean).forEach(p => { const i = p.indexOf(':'); if (i > 0) out[p.slice(0, i)] = p.slice(i + 1); });
+  return out;
+}
 const CHAT_SHEET = 'Pokalbiai';
 const CHAT_HEADERS = ['id', 'athlete', 'text', 'createdAt', 'likes'];
 
@@ -63,7 +71,8 @@ function doGet() {
     amount: Number(r[3]),
     date: dateStr_(r[4]),
     note: String(r[5] || ''),
-    createdAt: r[6] instanceof Date ? r[6].toISOString() : String(r[6] || '')
+    createdAt: r[6] instanceof Date ? r[6].toISOString() : String(r[6] || ''),
+    reactions: parseReactions_(r[7])
   }));
   const cv = chatSheet_().getDataRange().getValues();
   cv.shift();
@@ -74,7 +83,7 @@ function doGet() {
     text: String(r[2] || '').replace(/^'/, ''),
     createdAt: r[3] instanceof Date ? r[3].toISOString() : String(r[3] || '').replace(/^'/, '')
   }));
-  return json_({ ok: true, likesV: 1, entries: entries, messages: messages });
+  return json_({ ok: true, likesV: 1, reactV: 1, entries: entries, messages: messages });
 }
 
 function doPost(e) {
@@ -123,6 +132,24 @@ function doPost(e) {
           if (body.on) names.push(body.athlete);
           cell.setValue(names.join(','));
           return json_({ ok: true, likes: names });
+        }
+      }
+      return json_({ ok: false, error: 'not_found' });
+    }
+
+    if (body.action === 'react') {
+      if (ATHLETES.indexOf(body.athlete) < 0) return json_({ ok: false, error: 'athlete' });
+      const emoji = String(body.emoji || '');
+      if (emoji && REACTIONS.indexOf(emoji) < 0) return json_({ ok: false, error: 'emoji' });
+      const ids = sh.getRange(1, 1, sh.getLastRow(), 1).getValues();
+      for (let i = ids.length - 1; i >= 1; i--) {
+        if (String(ids[i][0]) === String(body.id)) {
+          const cell = sh.getRange(i + 1, 8);
+          const r = parseReactions_(cell.getValue());
+          delete r[body.athlete];
+          if (emoji) r[body.athlete] = emoji;
+          cell.setValue(Object.keys(r).map(n => n + ':' + r[n]).join(','));
+          return json_({ ok: true, reactions: r });
         }
       }
       return json_({ ok: false, error: 'not_found' });

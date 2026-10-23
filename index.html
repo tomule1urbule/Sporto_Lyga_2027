@@ -102,6 +102,12 @@ button{font:inherit;cursor:pointer;border-radius:4px}
 .feed .t{font-weight:600;overflow-wrap:anywhere}
 .feed .m{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
 .feed .p{font-family:var(--f-display);font-weight:800;font-size:22px;text-align:right;font-variant-numeric:tabular-nums;line-height:1}
+.reacts{grid-column:1 / -1;display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.react{display:inline-flex;align-items:center;gap:3px;background:none;border:1px solid var(--line);border-radius:999px;padding:1px 8px;font-size:14px;line-height:1.5;color:var(--muted)}
+.react .c{font-size:12px;font-variant-numeric:tabular-nums}
+.react.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent)}
+.react.zero{opacity:.55}
+.react.zero:hover{opacity:1}
 .feed .acts{grid-column:2;text-align:right;display:flex;gap:6px;justify-content:flex-end}
 .link{background:none;border:0;padding:2px 0;color:var(--muted);font-size:12px;text-decoration:underline;text-underline-offset:2px}
 .link.danger{color:var(--bad)}
@@ -338,7 +344,8 @@ const SPORTS = [
   {id:"padel",  name:"Padelis / tenisas", unit:"min", per:60, pts:5},
   {id:"basket", name:"Krepšinis",         unit:"min", per:60, pts:5},
   {id:"hiit",   name:"HIIT / Hyrox",      unit:"min", per:60, pts:6},
-  {id:"other",  name:"Kita aktyvi veikla", unit:"min", per:60, pts:3},
+  {id:"ski",    name:"Slidinėjimas",      unit:"min", per:60, pts:3},
+  {id:"other",  name:"Kita aktyvi veikla", unit:"min", per:60, pts:2},
 ];
 const SPORT = Object.fromEntries(SPORTS.map(s=>[s.id,s]));
 
@@ -353,6 +360,7 @@ const BONUSES = [
   {id:"b05", date:"2026-12-26", kind:"claim", pts:10, title:"Kalėdinių kalorijų deginimas", desc:"Sudegink bent 3 500 kalorijų per dieną – iš viso, įskaitant ramybės kalorijas (pagal laikrodį ar programėlę).", field:"Kalorijos iš viso (kcal)", unitLabel:"kcal", min:3500, max:15000},
   {id:"b06", date:"2027-01-01", kind:"auto",  pts:10, title:"Naujametinis startas",      desc:"Nubėk arba nueik bent 10 km per dieną.", rule:{type:"km", sports:["run","walk"], min:10}},
   {id:"b07", date:"2027-01-13", kind:"auto",  pts:10, title:"Sausio 13-osios kilometrai", desc:"Nubėk arba nueik bent 13 km per dieną.", rule:{type:"km", sports:["run","walk"], min:13}},
+  {id:"b12", date:"2027-01-22", kind:"claim", confirm:true, pts:10, title:"Alus už Žalgirį", desc:"Žalgiris žaidžia su Virtus – išgerk bent vieną alaus už Žalgirio pergalę.", field:"Alus", button:"Išgėriau alaus 🍺", min:1},
   {id:"b08", date:"2027-01-24", kind:"auto",  pts:10, title:"Plaukimo diena",            desc:"Nuplauk bent 1 km.", rule:{type:"km", sports:["swim"], min:1}},
   {id:"b09", date:"2027-02-14", kind:"auto",  pts:10, title:"Dvigubas Valentinas",       desc:"Užregistruok bent 2 skirtingas veiklas tą pačią dieną.", rule:{type:"sports", min:2}},
   {id:"b10", date:"2027-02-16", kind:"auto",  pts:10, title:"Vasario 16-osios iššūkis",  desc:"Surink bent 16 veiklos taškų per dieną.", rule:{type:"points", min:16}},
@@ -368,7 +376,8 @@ const $ = id => document.getElementById(id);
 let ME = null;
 let entries = [], feedLimit = 25, pendingDelete = null, busy = false;
 let calMonth = null, calSel = null;
-let likesSupported = true;
+let likesSupported = true, reactSupported = false;
+const REACTIONS = ["💪","🤯","🖕","👍"];
 let messages = [], chatSupported = true, pendingChatDelete = null, lastChatKey = "";
 
 /* Lietuviškos daugiskaitos formos: [1, 2–9, 0/10–20] */
@@ -407,7 +416,7 @@ async function apiPost(body){
 }
 function clean(list){
   const LEGACY = {class:"hiit"}; // senų veiklų ID → naujos
-  return (list||[]).map(e=>({...e, sport: LEGACY[e.sport] || e.sport, amount:Number(e.amount), date:String(e.date||"").slice(0,10), note:String(e.note||"")}))
+  return (list||[]).map(e=>({...e, reactions: (e.reactions && typeof e.reactions==='object') ? Object.fromEntries(Object.entries(e.reactions).filter(([n,v])=>ATHLETES.includes(n) && REACTIONS.includes(v))) : {}, sport: LEGACY[e.sport] || e.sport, amount:Number(e.amount), date:String(e.date||"").slice(0,10), note:String(e.note||"")}))
     .filter(e=>e.id && ATHLETES.includes(e.athlete) && (SPORT[e.sport] || e.sport==="bonus") && e.amount>0 && /^\d{4}-\d{2}-\d{2}$/.test(e.date));
 }
 async function refresh(){
@@ -420,6 +429,7 @@ async function refresh(){
     messages = (data.messages||[]).filter(m=>m && m.id && ATHLETES.includes(m.athlete) && m.text)
       .map(m=>({...m, likes:(Array.isArray(m.likes)?m.likes:[]).filter(n=>ATHLETES.includes(n))}));
     likesSupported = data.likesV === 1;
+    reactSupported = data.reactV === 1;
     lsSet("sl27-cache", JSON.stringify(entries));
     const n = entries.filter(e=>e.sport!=="bonus").length;
     $("status").textContent = n ? `${n} ${plural(n,"veikla","veiklos","veiklų")} · atnaujinama automatiškai` : "Laukiama pirmos veiklos";
@@ -548,6 +558,7 @@ function renderBonusCard(all){
         <button class="primary" type="submit">Gauti +${tsk(b.pts)}</button><p class="msg" id="b-msg" role="status"></p>`;
       f.querySelector("label span").textContent = b.field;
       f.querySelector("#b-val").placeholder = String(b.min);
+      if(b.confirm){ f.querySelector("label").remove(); f.querySelector("button").textContent = `${b.button} · +${tsk(b.pts)}`; }
       f.addEventListener("submit", ev=>claimBonus(ev, b));
       if(!lateClaim) card.append(f);
       else { const n = document.createElement("p"); n.className="who-got"; n.textContent = "Rezultatą dar gali pateikti iki šios dienos pabaigos."; card.append(n, f); }
@@ -557,7 +568,7 @@ function renderBonusCard(all){
 }
 async function claimBonus(ev, b){
   ev.preventDefault();
-  const athlete = ME, val = parseInt($("b-val").value,10);
+  const athlete = ME, val = b.confirm ? 1 : parseInt($("b-val").value,10);
   const m = $("b-msg"), say2 = (t,k)=>{ m.textContent=t; m.className="msg "+(k||""); };
   if(!athlete) return say2("Pirmiausia prisijunk – pasirink savo vardą.","err");
   if(hasBonus(athlete,b)) return say2(`${athlete} šį bonusą jau gavo.`,"err");
@@ -619,7 +630,7 @@ function renderCalendar(all){
 function bonusBox(b, all, t){
   const box = document.createElement("div"); box.className = "bbox";
   const got = ATHLETES.filter(a=>all.some(i=>i.kind==="bonus" && i.athlete===a && i.b.id===b.id));
-  const how = b.kind==="auto" ? "Užskaitoma automatiškai pagal tą dieną užregistruotas veiklas." : `Įvesk savo rezultatą (${b.field.toLowerCase()}) bonuso kortelėje programėlės viršuje – tą arba kitą dieną.`;
+  const how = b.kind==="auto" ? "Užskaitoma automatiškai pagal tą dieną užregistruotas veiklas." : (b.confirm ? "Pažymėk bonuso kortelėje programėlės viršuje – tą arba kitą dieną." : `Įvesk savo rezultatą (${b.field.toLowerCase()}) bonuso kortelėje programėlės viršuje – tą arba kitą dieną.`);
   box.innerHTML = '<div class="bk"></div><div class="bt"></div><div class="bd"></div><div class="bh"></div><div class="bg"></div>';
   box.querySelector(".bk").textContent = `★ Bonuso diena · +${tsk(b.pts)}`;
   box.querySelector(".bt").textContent = b.title;
@@ -688,7 +699,7 @@ function renderRules(){
     li.querySelector(".d").textContent = prettyDate(b.date);
     li.querySelector("b").textContent = b.title;
     li.querySelector(".n").textContent = `+${b.pts}`;
-    li.querySelector(".x").textContent = b.desc + (b.kind==="auto" ? " Užskaitoma automatiškai." : " Rezultatą įvesk bonuso kortelėje programėlės viršuje tą arba kitą dieną.");
+    li.querySelector(".x").textContent = b.desc + (b.kind==="auto" ? " Užskaitoma automatiškai." : b.confirm ? " Pažymėk bonuso kortelėje programėlės viršuje tą arba kitą dieną." : " Rezultatą įvesk bonuso kortelėje programėlės viršuje tą arba kitą dieną.");
     ul.append(li);
   }
 }
@@ -752,10 +763,10 @@ function renderFeed(all){
   }
   for(const it of list.slice(0,feedLimit)){
     const li = document.createElement("li");
-    li.innerHTML = `<div><div class="t"></div><div class="m"></div></div><div class="p"></div><div class="m note" style="grid-column:1"></div><div class="acts"></div>`;
+    li.innerHTML = `<div><div class="t"></div><div class="m"></div></div><div class="p"></div><div class="m note" style="grid-column:1"></div><div class="acts"></div><div class="reacts"></div>`;
     if(it.kind==="bonus"){
       li.querySelector(".t").textContent = `${it.athlete} · ★ ${it.b.title}`;
-      li.querySelector(".m").textContent = `${prettyDate(it.date)} · bonusas` + (it.e ? ` · ${it.b.field.toLowerCase()}: ${fmtInt(claimInfo(it.e).val)}` : " · automatiškai");
+      li.querySelector(".m").textContent = `${prettyDate(it.date)} · bonusas` + (it.e ? (it.b.confirm ? " · 🍺" : ` · ${it.b.field.toLowerCase()}: ${fmtInt(claimInfo(it.e).val)}`) : " · automatiškai");
     } else {
       const e = it.e, s = SPORT[e.sport];
       li.querySelector(".t").textContent = `${e.athlete} · ${s.name}`;
@@ -763,6 +774,22 @@ function renderFeed(all){
       li.querySelector(".note").textContent = e.note || "";
     }
     li.querySelector(".p").textContent = "+"+fmt(it.pts);
+    const rx = li.querySelector(".reacts");
+    if(it.e && reactSupported){
+      const r = it.e.reactions || {};
+      for(const em of REACTIONS){
+        const who = Object.keys(r).filter(n=>r[n]===em), mine = r[ME]===em;
+        const b = document.createElement("button"); b.type="button";
+        b.className = "react"+(mine?" on":"")+(who.length?"":" zero");
+        b.setAttribute("aria-pressed", mine?"true":"false");
+        b.title = who.length ? who.join(", ") : "Reaguoti";
+        b.setAttribute("aria-label", `${em} ${who.length}${who.length?": "+who.join(", "):""}`);
+        b.innerHTML = '<span></span><span class="c"></span>';
+        b.firstChild.textContent = em; b.lastChild.textContent = who.length ? String(who.length) : "";
+        b.onclick = ()=>react(it.e.id, em);
+        rx.append(b);
+      }
+    } else rx.remove();
     const acts = li.querySelector(".acts");
     if(it.e && it.athlete===ME){
       const id = it.e.id;
@@ -867,6 +894,17 @@ function setupChat(){
     }catch(_){ say3("Nepavyko išsiųsti. Bandyk dar kartą.","err"); }
     finally{ $("c-send").disabled = false; busy = false; refresh(); }
   });
+}
+async function react(id, em){
+  if(!ME) return;
+  const e = entries.find(x=>x.id===id); if(!e) return;
+  const prev = (e.reactions||{})[ME] || "";
+  const next = prev===em ? "" : em;
+  e.reactions = {...(e.reactions||{})}; if(next) e.reactions[ME]=next; else delete e.reactions[ME];
+  busy = true; renderFeed(items());
+  try{ await apiPost({action:"react", id, athlete:ME, emoji:next}); }
+  catch(_){ e.reactions = {...e.reactions}; if(prev) e.reactions[ME]=prev; else delete e.reactions[ME]; renderFeed(items()); $("status").textContent="Nepavyko sureaguoti. Bandyk dar kartą."; }
+  finally{ busy = false; refresh(); }
 }
 async function toggleLike(id){
   if(!ME) return;

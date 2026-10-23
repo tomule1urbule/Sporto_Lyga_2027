@@ -21,7 +21,37 @@ function parseReactions_(v) {
 const COLORS_KEY = 'colors_v2';
 function colors_() { try { return JSON.parse(PropertiesService.getScriptProperties().getProperty(COLORS_KEY) || '{}'); } catch (e) { return {}; } }
 const CHAT_SHEET = 'Pokalbiai';
-const CHAT_HEADERS = ['id', 'athlete', 'text', 'createdAt', 'likes'];
+const CHAT_HEADERS = ['id', 'athlete', 'text', 'createdAt', 'likes', 'image'];
+// Nuotraukos saugomos atskirame lape dalimis (langelyje telpa iki 50 000 simbolių)
+const IMG_SHEET = 'Nuotraukos';
+const IMG_CHUNK = 45000;
+function imgSheet_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(IMG_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(IMG_SHEET);
+    sh.appendRow(['imageId', 'part', 'data']);
+    sh.setFrozenRows(1);
+    sh.getRange('A:C').setNumberFormat('@');
+  }
+  return sh;
+}
+function readImage_(id) {
+  const sh = imgSheet_();
+  const last = sh.getLastRow();
+  if (last < 2) return '';
+  const rows = sh.getRange(2, 1, last - 1, 3).getValues().filter(r => String(r[0]) === String(id));
+  rows.sort((a, b) => Number(a[1]) - Number(b[1]));
+  return rows.map(r => String(r[2])).join('');
+}
+function deleteImage_(id) {
+  if (!id) return;
+  const sh = imgSheet_();
+  const last = sh.getLastRow();
+  if (last < 2) return;
+  const ids = sh.getRange(2, 1, last - 1, 1).getValues();
+  for (let i = ids.length - 1; i >= 0; i--) { if (String(ids[i][0]) === String(id)) sh.deleteRow(i + 2); }
+}
 
 function chatSheet_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -64,7 +94,11 @@ function dateStr_(v) {
   return String(v).replace(/^'/, '').slice(0, 10);
 }
 
-function doGet() {
+function doGet(e) {
+  if (e && e.parameter && e.parameter.img) {
+    const data = readImage_(e.parameter.img);
+    return json_({ ok: !!data, data: data });
+  }
   const values = sheet_().getDataRange().getValues();
   values.shift();
   const entries = values.filter(r => r[0]).map(r => ({
@@ -81,12 +115,13 @@ function doGet() {
   cv.shift();
   const messages = cv.filter(r => r[0]).slice(-200).map(r => ({
     likes: String(r[4] || '').split(',').filter(Boolean),
+    image: String(r[5] || ''),
     id: String(r[0]),
     athlete: String(r[1]),
     text: String(r[2] || '').replace(/^'/, ''),
     createdAt: r[3] instanceof Date ? r[3].toISOString() : String(r[3] || '').replace(/^'/, '')
   }));
-  return json_({ ok: true, likesV: 1, reactV: 1, colorsV: 1, colors: colors_(), entries: entries, messages: messages });
+  return json_({ ok: true, likesV: 1, reactV: 1, colorsV: 1, imgV: 1, colors: colors_(), entries: entries, messages: messages });
 }
 
 function doPost(e) {
@@ -115,11 +150,21 @@ function doPost(e) {
     if (body.action === 'chat') {
       const text = String(body.text || '').trim().slice(0, 500);
       if (ATHLETES.indexOf(body.athlete) < 0) return json_({ ok: false, error: 'athlete' });
-      if (!text) return json_({ ok: false, error: 'text' });
+      const image = String(body.image || '');
+      if (image && (!/^data:image\/(jpeg|png|webp);base64,/.test(image) || image.length > 1500000)) return json_({ ok: false, error: 'image' });
+      if (!text && !image) return json_({ ok: false, error: 'text' });
       const id = Utilities.getUuid();
+      let imageId = '';
+      if (image) {
+        imageId = Utilities.getUuid();
+        const rows = [];
+        for (let i = 0, p = 0; i < image.length; i += IMG_CHUNK, p++) rows.push([imageId, String(p), image.slice(i, i + IMG_CHUNK)]);
+        const ish = imgSheet_();
+        ish.getRange(ish.getLastRow() + 1, 1, rows.length, 3).setValues(rows);
+      }
       // C ir D stulpeliai suformatuoti kaip tekstas, todėl Sheets jų nepaverčia formule ar data
-      chatSheet_().appendRow([id, body.athlete, text, new Date().toISOString()]);
-      return json_({ ok: true, id: id });
+      chatSheet_().appendRow([id, body.athlete, text, new Date().toISOString(), '', imageId]);
+      return json_({ ok: true, id: id, image: imageId });
     }
 
     if (body.action === 'like') {
@@ -170,7 +215,13 @@ function doPost(e) {
     }
 
     if (body.action === 'deleteChat') {
-      deleteById_(chatSheet_(), body.id);
+      const csh = chatSheet_();
+      const last = csh.getLastRow();
+      if (last >= 2) {
+        const rows = csh.getRange(2, 1, last - 1, 6).getValues();
+        for (const r of rows) { if (String(r[0]) === String(body.id)) { deleteImage_(r[5]); break; } }
+      }
+      deleteById_(csh, body.id);
       return json_({ ok: true });
     }
 

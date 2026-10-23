@@ -121,6 +121,7 @@ button{font:inherit;cursor:pointer;border-radius:4px}
 .login-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
 .login-grid button{min-width:0;overflow:hidden;display:flex;align-items:center;gap:10px;background:color-mix(in srgb,var(--band-ink) 7%,transparent);border:1px solid color-mix(in srgb,var(--band-ink) 18%,transparent);color:var(--band-ink);padding:16px 14px;font-family:var(--f-display);font-weight:800;font-size:22px;text-transform:uppercase;letter-spacing:.02em;text-align:left;border-radius:6px}
 .login-grid button:hover,.login-grid button:focus-visible{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,transparent)}
+.login-grid button:last-child:nth-child(odd){grid-column:1 / -1}
 .login-grid .dot{width:14px;height:14px}
 .whoami{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--band-ink)}
 .logout{background:none;border:1px solid color-mix(in srgb,var(--band-ink) 30%,transparent);color:var(--band-muted);font-size:12px;padding:4px 10px;border-radius:999px}
@@ -354,7 +355,7 @@ dialog::backdrop{background:rgba(6,11,16,.55)}
 const API_URL = "https://script.google.com/macros/s/AKfycbzSbysdNwLBeLb-04gG1ns0T9tFD0UqJX7-YY5eqRPsL3yFFLWWuCCw1Yjzwv9-WdCg/exec";
 /* ====================== */
 
-const ATHLETES = ["Edvinas","Tomas","Vygantas","Justas","Paulius","Eduardas"];
+const ATHLETES = ["Edvinas","Tomas","Vygantas","Justas","Paulius","Eduardas","Dainius"];
 const PALETTE_NAMES = ["Oranžinė","Mėlyna","Žalia","Violetinė","Geltona","Rožinė","Raudona","Žydra","Ruda","Grafito","Salotinė","Tamsiai mėlyna","Bordo","Koralinė","Alyvinė","Smaragdinė","Alyvuogių","Purpurinė"];
 let PLAYER_COLORS = {}, colorsSupported = false;
 /* Žaidėjo spalva: pasirinkta (iš lentelės) arba numatytoji, jei ji dar laisva */

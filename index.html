@@ -12,7 +12,7 @@
 :root{
   --bg:#F2F5F7; --surface:#FFFFFF; --ink:#0E1A24; --muted:#5B6B78; --line:#D9E1E7;
   --accent:#E2541B; --accent-ink:#FFFFFF; --band:#0E1A24; --band-ink:#EAF0F4; --band-muted:#8EA2B1;
-  --good:#1F8A5B; --bad:#C2372B;
+  --good:#1F8A5B; --bad:#C2372B; --star:#F2A900;
   --a1:#E2541B; --a2:#1C6DD0; --a3:#1F8A5B; --a4:#9B3FCB; --a5:#C9930A; --a6:#D0347A;
   --f-display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
   --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -21,13 +21,13 @@
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0B131A; --surface:#121D26; --ink:#E6EDF2; --muted:#8FA1AF; --line:#22313D;
   --accent:#FF7440; --accent-ink:#1A0A03; --band:#060B10; --band-ink:#EAF0F4; --band-muted:#7E93A3;
-  --good:#3CC48A; --bad:#FF6B5E;
+  --good:#3CC48A; --bad:#FF6B5E; --star:#FFC933;
   --a1:#FF7440; --a2:#5AA2FF; --a3:#3CC48A; --a4:#C37BF0; --a5:#F2C23D; --a6:#FF6FAE;
   color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0B131A; --surface:#121D26; --ink:#E6EDF2; --muted:#8FA1AF; --line:#22313D;
   --accent:#FF7440; --accent-ink:#1A0A03; --band:#060B10; --band-ink:#EAF0F4; --band-muted:#7E93A3;
-  --good:#3CC48A; --bad:#FF6B5E;
+  --good:#3CC48A; --bad:#FF6B5E; --star:#FFC933;
   --a1:#FF7440; --a2:#5AA2FF; --a3:#3CC48A; --a4:#C37BF0; --a5:#F2C23D; --a6:#FF6FAE;
   color-scheme:dark}
 
@@ -133,6 +133,12 @@ button{font:inherit;cursor:pointer;border-radius:4px}
 .msgs .tm{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
 .msgs .tx{font-size:14.5px;white-space:pre-wrap;overflow-wrap:anywhere}
 .msgs .rm{margin-left:auto}
+.likes{display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap}
+.like{display:inline-flex;align-items:center;gap:4px;background:none;border:1px solid var(--line);border-radius:999px;padding:2px 9px;font-size:12.5px;color:var(--muted);line-height:1.4}
+.like .h{font-size:13px}
+.like.on{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.like:disabled{opacity:.6}
+.likers{font-size:11.5px;color:var(--muted)}
 .msgs .emptychat{color:var(--muted);font-size:14px;justify-content:center;padding:14px 0}
 .chatform{border-top:1px solid var(--line);padding:12px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
 .chatform select{grid-column:1 / -1;font-size:14px;padding:7px 8px}
@@ -186,8 +192,14 @@ dialog::backdrop{background:rgba(6,11,16,.55)}
 .day.out{visibility:hidden}
 .day.future{opacity:.55}
 .day.today{border-color:var(--ink);border-width:2px;padding:3px 3px 4px}
-.day.bonusday{border-color:var(--accent);border-style:dashed}
-.day.bonusday::after{content:"★";position:absolute;top:2px;right:4px;font-size:11px;color:var(--accent);line-height:1}
+.day.bonusday{border-color:var(--accent);border-style:solid;background:color-mix(in srgb,var(--accent) 10%,var(--bg))}
+.day.bonusday.future{opacity:1}
+.day.bonusday::after{content:"★";position:absolute;top:1px;right:3px;font-size:15px;color:var(--star);line-height:1;text-shadow:0 0 6px color-mix(in srgb,var(--star) 70%,transparent)}
+.day.nextbonus{border-width:2px;padding:3px 3px 4px;background:color-mix(in srgb,var(--star) 22%,var(--bg));box-shadow:0 0 0 2px color-mix(in srgb,var(--star) 35%,transparent)}
+.day.nextbonus::after{font-size:18px;animation:twinkle 1.6s ease-in-out infinite}
+@keyframes twinkle{50%{transform:scale(1.25)}}
+@media (prefers-reduced-motion:reduce){.day.nextbonus::after{animation:none}}
+.day.sel.bonusday{background:var(--ink)}
 .day.sel{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .daydetail{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
 .daydetail h3{font-family:var(--f-display);font-weight:800;font-size:20px;margin:0 0 6px;text-transform:uppercase}
@@ -247,7 +259,7 @@ dialog::backdrop{background:rgba(6,11,16,.55)}
     </section>
     <section aria-labelledby="h-cal">
       <h2 id="h-cal">Kalendorius</h2>
-      <p class="sub">Paspausk dieną ir pamatysi, kas ką nuveikė. ★ – bonuso diena.</p>
+      <p class="sub">Paspausk dieną ir pamatysi, kas ką nuveikė. ★ – bonuso diena, ryškiausia – artimiausia.</p>
       <div class="cal">
         <div class="calnav"><button type="button" id="cal-prev" aria-label="Ankstesnis mėnuo">‹</button><b id="cal-title"></b><button type="button" id="cal-next" aria-label="Kitas mėnuo">›</button></div>
         <div class="calgrid" id="cal-grid"></div>
@@ -326,6 +338,7 @@ const SPORTS = [
   {id:"padel",  name:"Padelis / tenisas", unit:"min", per:60, pts:5},
   {id:"basket", name:"Krepšinis",         unit:"min", per:60, pts:5},
   {id:"hiit",   name:"HIIT / Hyrox",      unit:"min", per:60, pts:6},
+  {id:"other",  name:"Kita aktyvi veikla", unit:"min", per:60, pts:3},
 ];
 const SPORT = Object.fromEntries(SPORTS.map(s=>[s.id,s]));
 
@@ -334,7 +347,6 @@ const SPORT = Object.fromEntries(SPORTS.map(s=>[s.id,s]));
    kind "claim" – sportininkas pats įveda rezultatą (žingsnius, kalorijas); galima pateikti tą ir kitą dieną.
    rule.type: km (atstumas nurodytose veiklose), minutes (trukmė nurodytose veiklose), sports (skirtingų veiklų sk.), points (veiklos taškai) */
 const BONUSES = [
-  {id:"b01", date:"2026-10-22", kind:"auto",  pts:10, title:"Starto diena",              desc:"Surink bent 5 veiklos taškus per dieną.", rule:{type:"points", min:5}},
   {id:"b02", date:"2026-11-08", kind:"claim", pts:10, title:"30 000 žingsnių",           desc:"Surink 30 000 žingsnių per dieną (pagal laikrodį ar telefoną).", field:"Žingsniai", unitLabel:"žingsnių", min:30000, max:200000},
   {id:"b03", date:"2026-11-23", kind:"auto",  pts:10, title:"Kariuomenės dienos treniruotė", desc:"Praleisk sporto salėje bent 60 min.", rule:{type:"minutes", sports:["gym"], min:60}},
   {id:"b04", date:"2026-12-06", kind:"auto",  pts:10, title:"Ilgasis sekmadienis",       desc:"Nubėk arba nueik bent 15 km per dieną.", rule:{type:"km", sports:["run","walk"], min:15}},
@@ -356,6 +368,7 @@ const $ = id => document.getElementById(id);
 let ME = null;
 let entries = [], feedLimit = 25, pendingDelete = null, busy = false;
 let calMonth = null, calSel = null;
+let likesSupported = true;
 let messages = [], chatSupported = true, pendingChatDelete = null, lastChatKey = "";
 
 /* Lietuviškos daugiskaitos formos: [1, 2–9, 0/10–20] */
@@ -404,7 +417,9 @@ async function refresh(){
     const data = await apiLoad();
     entries = clean(data.entries);
     chatSupported = Array.isArray(data.messages);
-    messages = (data.messages||[]).filter(m=>m && m.id && ATHLETES.includes(m.athlete) && m.text);
+    messages = (data.messages||[]).filter(m=>m && m.id && ATHLETES.includes(m.athlete) && m.text)
+      .map(m=>({...m, likes:(Array.isArray(m.likes)?m.likes:[]).filter(n=>ATHLETES.includes(n))}));
+    likesSupported = data.likesV === 1;
     lsSet("sl27-cache", JSON.stringify(entries));
     const n = entries.filter(e=>e.sport!=="bonus").length;
     $("status").textContent = n ? `${n} ${plural(n,"veikla","veiklos","veiklų")} · atnaujinama automatiškai` : "Laukiama pirmos veiklos";
@@ -505,8 +520,7 @@ function renderBonusCard(all){
   const bs = activeBonuses();
   const today = bs.find(b=>b.date===t);
   const lateClaim = !today && bs.find(b=>b.date===y && b.kind==="claim");
-  const next = bs.filter(b=>b.date > t).sort((a,b)=>a.date.localeCompare(b.date))[0];
-  const b = today || lateClaim || next;
+  const b = today || lateClaim;
   if(!b){ sec.hidden = true; return; }
   const live = !!(today || lateClaim);
   const typing = $("b-val") && (sec.contains(document.activeElement) || $("b-val").value);
@@ -567,15 +581,17 @@ function renderCalendar(all){
   const grid = $("cal-grid"); grid.innerHTML = "";
   ["Pr","An","Tr","Kt","Pn","Št","Sk"].forEach(w=>{ const d=document.createElement("div"); d.className="wd"; d.textContent=w; grid.append(d); });
   const first = new Date(Y, M-1, 1), lead = (first.getDay()+6)%7, days = new Date(Y, M, 0).getDate();
+  const nb = activeBonuses().filter(b=>b.date >= t).sort((a,b)=>a.date.localeCompare(b.date))[0];
+  const nextB = nb ? nb.date : null;
   const byDay = {};
   for(const it of all){ (byDay[it.date] ||= new Set()).add(it.athlete); }
   for(let k=0;k<lead;k++){ const d=document.createElement("div"); d.className="day out"; grid.append(d); }
   for(let d=1; d<=days; d++){
     const ds = `${Y}-${String(M).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
     const btn = document.createElement("button"); btn.type = "button";
-    btn.className = "day" + (ds===t?" today":"") + (ds>t?" future":"") + (bonusOn(ds)?" bonusday":"") + (ds===calSel?" sel":"");
+    btn.className = "day" + (ds===t?" today":"") + (ds>t?" future":"") + (bonusOn(ds)?" bonusday":"") + (ds===nextB?" nextbonus":"") + (ds===calSel?" sel":"");
     const who = byDay[ds] ? ATHLETES.filter(a=>byDay[ds].has(a)) : [];
-    btn.setAttribute("aria-label", `${prettyDate(ds)}${bonusOn(ds)?", bonuso diena":""}${who.length?", sportavo: "+who.join(", "):""}`);
+    btn.setAttribute("aria-label", `${prettyDate(ds)}${bonusOn(ds)?(ds===nextB?", artimiausia bonuso diena":", bonuso diena"):""}${who.length?", sportavo: "+who.join(", "):""}`);
     btn.innerHTML = `<span class="dn">${d}</span><span class="dots"></span>`;
     const dots = btn.querySelector(".dots");
     who.forEach(a=>{ const i=document.createElement("i"); i.style.background=`var(${COLORS[ATHLETES.indexOf(a)]})`; dots.append(i); });
@@ -588,7 +604,7 @@ function renderCalendar(all){
   const b = bonusOn(calSel);
   if(b) det.append(bonusBox(b, all, t));
   const dayItems = all.filter(i=>i.date===calSel).sort((x,y)=>ATHLETES.indexOf(x.athlete)-ATHLETES.indexOf(y.athlete) || (x.kind==="bonus") - (y.kind==="bonus"));
-  if(!dayItems.length){ const p=document.createElement("p"); p.className="sub"; p.style.margin="0"; p.textContent = calSel > t ? "Ši diena dar neatėjo." : "Šią dieną niekas nesportavo."; det.append(p); monthBonuses(Y, M, all, t); return; }
+  if(!dayItems.length){ const p=document.createElement("p"); p.className="sub"; p.style.margin="0"; p.textContent = calSel > t ? "Ši diena dar neatėjo." : "Šią dieną niekas nesportavo."; det.append(p); return; }
   const ul = document.createElement("ul");
   for(const it of dayItems){
     const li = document.createElement("li");
@@ -599,7 +615,6 @@ function renderCalendar(all){
     ul.append(li);
   }
   det.append(ul);
-  monthBonuses(Y, M, all, t);
 }
 function bonusBox(b, all, t){
   const box = document.createElement("div"); box.className = "bbox";
@@ -612,23 +627,6 @@ function bonusBox(b, all, t){
   box.querySelector(".bh").textContent = how;
   box.querySelector(".bg").textContent = b.date > t ? "" : (got.length ? `Gavo: ${got.join(", ")}` : "Šio bonuso niekas negavo.");
   return box;
-}
-function monthBonuses(Y, M, all, t){
-  const pre = `${Y}-${String(M).padStart(2,"0")}`;
-  const list = BONUSES.filter(b=>b.date.startsWith(pre) && b.date!==calSel);
-  if(!list.length) return;
-  const wrap = document.createElement("div"); wrap.className = "mbon";
-  const h = document.createElement("div"); h.className = "mbh"; h.textContent = "Kiti šio mėnesio bonusai"; wrap.append(h);
-  for(const b of list){
-    const btn = document.createElement("button"); btn.type = "button"; btn.className = "mb";
-    btn.innerHTML = '<span class="d"></span><span class="tt"><b></b><span></span></span>';
-    btn.querySelector(".d").textContent = prettyDate(b.date);
-    btn.querySelector("b").textContent = b.title;
-    btn.querySelector(".tt span").textContent = b.desc;
-    btn.addEventListener("click",()=>{ calSel = b.date; renderCalendar(items()); });
-    wrap.append(btn);
-  }
-  $("cal-detail").append(wrap);
 }
 function shiftMonth(n){
   const [Y,M] = calMonth.split("-").map(Number); const d = new Date(Y, M-1+n, 1);
@@ -807,7 +805,7 @@ function chatTime(iso){
 function renderChat(){
   const ul = $("msgs");
   const list = messages.slice().sort((a,b)=>String(a.createdAt).localeCompare(String(b.createdAt))).slice(-100);
-  const key = list.map(m=>m.id).join(",")+"|"+pendingChatDelete+"|"+chatSupported;
+  const key = list.map(m=>m.id+":"+(m.likes||[]).join("+")).join(",")+"|"+ME+"|"+pendingChatDelete+"|"+chatSupported;
   if(key===lastChatKey) return;
   const atBottom = ul.scrollHeight - ul.scrollTop - ul.clientHeight < 40 || !lastChatKey;
   lastChatKey = key; ul.innerHTML = "";
@@ -818,13 +816,23 @@ function renderChat(){
   }
   for(const m of list){
     const li = document.createElement("li");
-    li.innerHTML = '<span class="av"></span><div class="bubble"><div class="hd"><span class="nm"></span><span class="tm"></span><span class="rm"></span></div><div class="tx"></div></div>';
+    li.innerHTML = '<span class="av"></span><div class="bubble"><div class="hd"><span class="nm"></span><span class="tm"></span><span class="rm"></span></div><div class="tx"></div><div class="likes"></div></div>';
     const ci = ATHLETES.indexOf(m.athlete);
     li.querySelector(".av").style.background = `var(${COLORS[ci]})`;
     li.querySelector(".av").textContent = m.athlete.charAt(0);
     li.querySelector(".nm").textContent = m.athlete;
     li.querySelector(".tm").textContent = chatTime(m.createdAt);
     li.querySelector(".tx").textContent = m.text;
+    const lk = li.querySelector(".likes"), likers = m.likes||[], mine = likers.includes(ME);
+    const lb = document.createElement("button"); lb.type="button"; lb.className = "like"+(mine?" on":"");
+    lb.setAttribute("aria-pressed", mine?"true":"false");
+    lb.setAttribute("aria-label", mine ? "Atšaukti patiktuką" : "Patinka");
+    lb.innerHTML = '<span class="h"></span><span class="c"></span>';
+    lb.querySelector(".h").textContent = mine ? "♥" : "♡";
+    lb.querySelector(".c").textContent = likers.length ? String(likers.length) : "Patinka";
+    lb.onclick = ()=>toggleLike(m.id);
+    lk.append(lb);
+    if(likers.length){ const w=document.createElement("span"); w.className="likers"; w.textContent = likers.join(", "); lk.append(w); }
     const rm = li.querySelector(".rm");
     if(m.athlete!==ME){ /* svetimų žinučių trinti negalima */ }
     else if(pendingChatDelete===m.id){
@@ -859,6 +867,17 @@ function setupChat(){
     }catch(_){ say3("Nepavyko išsiųsti. Bandyk dar kartą.","err"); }
     finally{ $("c-send").disabled = false; busy = false; refresh(); }
   });
+}
+async function toggleLike(id){
+  if(!ME) return;
+  if(!likesSupported){ const m=$("c-msg"); m.textContent="Patiktukai įsijungs, kai bus atnaujintas Google skriptas."; m.className="msg err"; return; }
+  const msg = messages.find(x=>x.id===id); if(!msg) return;
+  const had = msg.likes.includes(ME);
+  msg.likes = had ? msg.likes.filter(n=>n!==ME) : [...msg.likes, ME];
+  busy = true; renderChat();
+  try{ await apiPost({action:"like", id, athlete:ME, on:!had}); }
+  catch(_){ msg.likes = had ? [...msg.likes, ME] : msg.likes.filter(n=>n!==ME); renderChat(); const m=$("c-msg"); m.textContent="Nepavyko pažymėti. Bandyk dar kartą."; m.className="msg err"; }
+  finally{ busy = false; refresh(); }
 }
 async function removeChat(id){
   pendingChatDelete = null; busy = true;

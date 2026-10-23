@@ -10,7 +10,7 @@ const ATHLETES = ['Edvinas', 'Tomas', 'Vygantas', 'Justas', 'Paulius', 'Eduardas
 // Veiklų sąrašas tikrinamas programėlėje, todėl keičiant veiklas šio kodo keisti nereikia.
 const HEADERS = ['id', 'athlete', 'sport', 'amount', 'date', 'note', 'createdAt'];
 const CHAT_SHEET = 'Pokalbiai';
-const CHAT_HEADERS = ['id', 'athlete', 'text', 'createdAt'];
+const CHAT_HEADERS = ['id', 'athlete', 'text', 'createdAt', 'likes'];
 
 function chatSheet_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -68,12 +68,13 @@ function doGet() {
   const cv = chatSheet_().getDataRange().getValues();
   cv.shift();
   const messages = cv.filter(r => r[0]).slice(-200).map(r => ({
+    likes: String(r[4] || '').split(',').filter(Boolean),
     id: String(r[0]),
     athlete: String(r[1]),
     text: String(r[2] || '').replace(/^'/, ''),
     createdAt: r[3] instanceof Date ? r[3].toISOString() : String(r[3] || '').replace(/^'/, '')
   }));
-  return json_({ ok: true, entries: entries, messages: messages });
+  return json_({ ok: true, likesV: 1, entries: entries, messages: messages });
 }
 
 function doPost(e) {
@@ -107,6 +108,24 @@ function doPost(e) {
       // C ir D stulpeliai suformatuoti kaip tekstas, todėl Sheets jų nepaverčia formule ar data
       chatSheet_().appendRow([id, body.athlete, text, new Date().toISOString()]);
       return json_({ ok: true, id: id });
+    }
+
+    if (body.action === 'like') {
+      // Patiktukai saugomi E stulpelyje kaip vardų sąrašas, atskirtas kableliais
+      if (ATHLETES.indexOf(body.athlete) < 0) return json_({ ok: false, error: 'athlete' });
+      const csh = chatSheet_();
+      const ids = csh.getRange(1, 1, csh.getLastRow(), 1).getValues();
+      for (let i = ids.length - 1; i >= 1; i--) {
+        if (String(ids[i][0]) === String(body.id)) {
+          const cell = csh.getRange(i + 1, 5);
+          let names = String(cell.getValue() || '').split(',').filter(Boolean);
+          names = names.filter(n => n !== body.athlete);
+          if (body.on) names.push(body.athlete);
+          cell.setValue(names.join(','));
+          return json_({ ok: true, likes: names });
+        }
+      }
+      return json_({ ok: false, error: 'not_found' });
     }
 
     if (body.action === 'deleteChat') {

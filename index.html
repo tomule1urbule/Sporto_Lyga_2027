@@ -366,6 +366,8 @@ function colorIdx(name){
   for(let k=0;k<PALETTE_NAMES.length;k++) if(!taken.has(k)) return k;
   return 0;
 }
+/* Rodomi tik prisijungę žaidėjai (išsirinkę spalvą). Senas skriptas be spalvų – rodomi visi. */
+function active(){ return ATHLETES.filter(a => !colorsSupported || PLAYER_COLORS[a] || a===ME); }
 function col(name){ return `var(--p${colorIdx(name)})`; }
 // unit: km arba min; pts skiriama už `per` vienetų
 const SPORTS = [
@@ -511,7 +513,8 @@ function items(){
     list.push({athlete:e.athlete, date:e.date, pts:b.pts, kind:"bonus", b, e});
   }
   for(const w of autoBonusAwards()) list.push({athlete:w.athlete, date:w.date, pts:w.b.pts, kind:"bonus", b:w.b});
-  return list;
+  const act = new Set(active());
+  return list.filter(i=>act.has(i.athlete));
 }
 function hasBonus(athlete, b){ return items().some(i=>i.kind==="bonus" && i.athlete===athlete && i.b.id===b.id); }
 
@@ -531,15 +534,17 @@ function renderClock(){
 
 /* ---------- Turnyrinė lentelė ---------- */
 function renderBoard(all){
-  const by = Object.fromEntries(ATHLETES.map(a=>[a,{pts:0,sports:{},bonus:0}]));
+  const ACT = active();
+  const by = Object.fromEntries(ACT.map(a=>[a,{pts:0,sports:{},bonus:0}]));
   for(const it of all){
-    const r = by[it.athlete]; r.pts += it.pts;
+    const r = by[it.athlete]; if(!r) continue; r.pts += it.pts;
     if(it.kind==="bonus"){ r.bonus += it.pts; continue; }
     const s = r.sports[it.e.sport] ||= {amount:0, pts:0}; s.amount += it.e.amount; s.pts += it.pts;
   }
-  const order = ATHLETES.map((a,i)=>({a,i,...by[a]})).sort((x,y)=>y.pts-x.pts || x.a.localeCompare(y.a,"lt"));
-  const top = order[0].pts || 1;
+  const order = ACT.map((a,i)=>({a,i,...by[a]})).sort((x,y)=>y.pts-x.pts || x.a.localeCompare(y.a,"lt"));
   const board = $("board"); board.innerHTML = "";
+  if(!order.length){ const p=document.createElement("p"); p.className="sub"; p.style.margin="12px 0"; p.textContent="Dar niekas neprisijungė. Pasirink savo vardą ir spalvą – atsirasi lentelėje."; board.append(p); return; }
+  const top = order[0].pts || 1;
   let rank = 0, prev = null;
   order.forEach((r,k)=>{
     if(r.pts !== prev){ rank = k+1; prev = r.pts; }
@@ -638,7 +643,7 @@ function renderCalendar(all){
     const ds = `${Y}-${String(M).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
     const btn = document.createElement("button"); btn.type = "button";
     btn.className = "day" + (ds===t?" today":"") + (ds>t?" future":"") + (bonusOn(ds)?" bonusday":"") + (ds===nextB?" nextbonus":"") + (ds===calSel?" sel":"");
-    const who = byDay[ds] ? ATHLETES.filter(a=>byDay[ds].has(a)) : [];
+    const who = byDay[ds] ? active().filter(a=>byDay[ds].has(a)) : [];
     btn.setAttribute("aria-label", `${prettyDate(ds)}${bonusOn(ds)?(ds===nextB?", artimiausia bonuso diena":", bonuso diena"):""}${who.length?", sportavo: "+who.join(", "):""}`);
     btn.innerHTML = `<span class="dn">${d}</span><span class="dots"></span>`;
     const dots = btn.querySelector(".dots");
@@ -686,7 +691,8 @@ function renderChart(all){
   const t = todayStr();
   const chart = $("chart"), legend = $("legend");
   legend.innerHTML = "";
-  ATHLETES.forEach((a,i)=>{ const s=document.createElement("span"); s.innerHTML='<span class="dot"></span>'; s.firstChild.style.background=col(a); s.append(a); legend.append(s); });
+  const ACT = active();
+  ACT.forEach((a,i)=>{ const s=document.createElement("span"); s.innerHTML='<span class="dot"></span>'; s.firstChild.style.background=col(a); s.append(a); legend.append(s); });
   if(all.length === 0){
     chart.innerHTML = '<div class="empty">Taškų dar nėra. Užregistruok pirmą veiklą ir lenktynės prasidės.</div>';
     return;
@@ -695,8 +701,8 @@ function renderChart(all){
   const lastDate = t > END ? t : END;
   const span = Math.max(1, dayDiff(first, lastDate));
   const last = Math.max(0, Math.min(dayDiff(first, t), span));
-  const daily = ATHLETES.map(()=>new Array(span+1).fill(0));
-  for(const it of all){ const ai = ATHLETES.indexOf(it.athlete); const d = dayDiff(first, it.date); if(ai>=0 && d>=0 && d<=span) daily[ai][d] += it.pts; }
+  const daily = ACT.map(()=>new Array(span+1).fill(0));
+  for(const it of all){ const ai = ACT.indexOf(it.athlete); const d = dayDiff(first, it.date); if(ai>=0 && d>=0 && d<=span) daily[ai][d] += it.pts; }
   const cum = daily.map(arr=>{ let s=0; return arr.map(v=>s+=v); });
   const maxV = Math.max(1, ...cum.map(c=>c[last]));
   const step = niceStep(maxV/4), yMax = Math.ceil(maxV/step)*step;
@@ -717,8 +723,8 @@ function renderChart(all){
   });
   cum.forEach((c,i)=>{
     const pts = c.slice(0,last+1).map((v,d)=>`${x(d).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
-    svg += `<polyline points="${pts}" fill="none" stroke="${col(ATHLETES[i])}" stroke-width="2.25" stroke-linejoin="round" stroke-linecap="round"/>`;
-    svg += `<circle cx="${x(last)}" cy="${y(c[last])}" r="3.5" fill="${col(ATHLETES[i])}"/>`;
+    svg += `<polyline points="${pts}" fill="none" stroke="${col(ACT[i])}" stroke-width="2.25" stroke-linejoin="round" stroke-linecap="round"/>`;
+    svg += `<circle cx="${x(last)}" cy="${y(c[last])}" r="3.5" fill="${col(ACT[i])}"/>`;
   });
   chart.innerHTML = svg + "</svg>";
 }
@@ -744,7 +750,6 @@ function renderRules(){
 /* ---------- Forma ---------- */
 function setupForm(){
   const fs = $("f-sport"), ff = $("feed-filter");
-  ff.innerHTML = '<option value="">Visi</option>' + ATHLETES.map(a=>`<option>${a}</option>`).join("");
   fs.innerHTML = SPORTS.map(s=>`<option value="${s.id}">${s.name}</option>`).join("");
   const t = todayStr();
   $("f-date").value = t; $("f-date").max = t;
@@ -856,7 +861,13 @@ async function remove(id){
   finally{ busy = false; refresh(); }
 }
 
+function renderFeedFilter(){
+  const ff = $("feed-filter"), cur = ff.value, act = active();
+  const want = '<option value="">Visi</option>' + act.map(a=>`<option>${a}</option>`).join("");
+  if(ff.dataset.k !== act.join(",")){ ff.innerHTML = want; ff.dataset.k = act.join(","); ff.value = act.includes(cur) ? cur : ""; }
+}
 function renderAll(){
+  renderFeedFilter();
   const all = items();
   renderClock(); renderBoard(all); renderBonusCard(all); renderCalendar(all); renderChart(all); renderFeed(all); renderChat();
 }
@@ -872,8 +883,9 @@ function chatTime(iso){
 }
 function renderChat(){
   const ul = $("msgs");
-  const list = messages.slice().sort((a,b)=>String(a.createdAt).localeCompare(String(b.createdAt))).slice(-100);
-  const key = list.map(m=>m.id+":"+(m.likes||[]).join("+")).join(",")+"|"+ME+"|"+pendingChatDelete+"|"+chatSupported;
+  const act = new Set(active());
+  const list = messages.filter(m=>act.has(m.athlete)).sort((a,b)=>String(a.createdAt).localeCompare(String(b.createdAt))).slice(-100);
+  const key = [...act].join("+")+"#"+list.map(m=>m.id+":"+(m.likes||[]).join("+")).join(",")+"|"+ME+"|"+pendingChatDelete+"|"+chatSupported;
   if(key===lastChatKey) return;
   const atBottom = ul.scrollHeight - ul.scrollTop - ul.clientHeight < 40 || !lastChatKey;
   lastChatKey = key; ul.innerHTML = "";

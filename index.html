@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Sporto Lyga 2027</title>
 <meta name="theme-color" content="#0E1A24">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sporto Lyga">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
@@ -124,6 +131,10 @@ button{font:inherit;cursor:pointer;border-radius:4px}
 .login-grid button:last-child:nth-child(odd){grid-column:1 / -1}
 .login-grid .dot{width:14px;height:14px}
 .whoami{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--band-ink)}
+.whoami{flex-wrap:wrap}
+.install{border-color:var(--accent);color:var(--band-ink)}
+.ios-steps{margin:10px 0 4px;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:15px}
+.ios-steps b{white-space:nowrap}
 .logout{background:none;border:1px solid color-mix(in srgb,var(--band-ink) 30%,transparent);color:var(--band-muted);font-size:12px;padding:4px 10px;border-radius:999px}
 .logout:hover{color:var(--band-ink);border-color:var(--band-ink)}
 .posting-as{grid-column:1 / -1;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
@@ -255,7 +266,7 @@ dialog::backdrop{background:rgba(6,11,16,.55)}
       <h1>Sporto Lyga <span>2027</span></h1>
     </div>
     <div class="clock" id="clock"></div>
-    <div class="whoami" id="whoami" hidden><span class="dot" id="me-dot"></span><span id="me-name"></span><button type="button" class="logout" id="logout">Keisti</button></div>
+    <div class="whoami" id="whoami" hidden><span class="dot" id="me-dot"></span><span id="me-name"></span><button type="button" class="logout" id="logout">Keisti</button><button type="button" class="logout install" id="install-btn" hidden>Įdiegti programėlę</button></div>
     <div class="progress" aria-hidden="true"><i id="prog"></i></div>
   </div>
 </header>
@@ -340,6 +351,16 @@ dialog::backdrop{background:rgba(6,11,16,.55)}
     </section>
   </div>
 </main>
+
+<dialog id="ios-dlg" aria-labelledby="h-ios">
+  <div class="dlg-head"><h2 id="h-ios">Įdiek programėlę</h2><button class="close" id="ios-close" type="button" aria-label="Uždaryti">×</button></div>
+  <ol class="ios-steps">
+    <li>Atidaryk šį puslapį <b>Safari</b> naršyklėje.</li>
+    <li>Apačioje paspausk <b>Bendrinti</b> (kvadratas su rodykle aukštyn).</li>
+    <li>Pasirink <b>„Pridėti prie pradžios ekrano“</b> ir paspausk <b>Pridėti</b>.</li>
+  </ol>
+  <p class="sub" style="margin:8px 0 6px">Programėlės ženkliukas atsiras tavo telefono ekrane.</p>
+</dialog>
 
 <dialog id="rules-dlg" aria-labelledby="h-rules">
   <div class="dlg-head"><h2 id="h-rules">Kaip skaičiuojami taškai</h2><button class="close" id="rules-close" type="button" aria-label="Uždaryti">×</button></div>
@@ -1054,9 +1075,28 @@ function login(name, silent){
   if(!silent) renderAll();
 }
 
+/* ---------- Įdiegimas (PWA) ---------- */
+function setupInstall(){
+  if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
+  const btn = $("install-btn"), dlg = $("ios-dlg");
+  const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  if(standalone) return;
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints > 1);
+  let deferred = null;
+  window.addEventListener("beforeinstallprompt", e=>{ e.preventDefault(); deferred = e; btn.hidden = false; });
+  window.addEventListener("appinstalled", ()=>{ btn.hidden = true; deferred = null; });
+  if(ios) btn.hidden = false;
+  btn.addEventListener("click", async ()=>{
+    if(deferred){ deferred.prompt(); try{ await deferred.userChoice; }catch(_){} deferred = null; btn.hidden = true; return; }
+    if(dlg.showModal) dlg.showModal(); else dlg.setAttribute("open","");
+  });
+  $("ios-close").addEventListener("click",()=>dlg.close ? dlg.close() : dlg.removeAttribute("open"));
+  dlg.addEventListener("click",ev=>{ if(ev.target===dlg) dlg.close(); });
+}
+
 /* ---------- Paleidimas ---------- */
 try{ const c = JSON.parse(lsGet("sl27-data")||"null"); if(c && c.ok) applyData(c); }catch(_){}
-renderRules(); setupForm(); setupChat(); setupLogin();
+renderRules(); setupForm(); setupChat(); setupLogin(); setupInstall();
 (()=>{ const d=$("rules-dlg");
   $("info-btn").addEventListener("click",()=>{ if(d.showModal) d.showModal(); else d.setAttribute("open",""); });
   $("rules-close").addEventListener("click",()=>d.close ? d.close() : d.removeAttribute("open"));

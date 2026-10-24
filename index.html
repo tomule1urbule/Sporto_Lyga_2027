@@ -321,7 +321,7 @@ dialog::backdrop{background:rgba(6,11,16,.55)}
 <header class="band">
   <div class="wrap top">
     <div class="brand">
-      <div class="eyebrow">Žiemos lyga · iki kovo 1 d.</div>
+      <div class="eyebrow">Žiemos lyga · iki kovo 31 d.</div>
       <div class="title">Sporto Lyga <span>2027</span></div>
     </div>
     <div class="whoami" id="whoami" hidden><button type="button" class="mechip" id="logout" title="Keisti vardą ar spalvą"><span class="dot" id="me-dot"></span><span id="me-name"></span></button><button type="button" class="logout install" id="install-btn" hidden>Įdiegti</button></div>
@@ -334,7 +334,7 @@ dialog::backdrop{background:rgba(6,11,16,.55)}
 
 <div class="login" id="login" hidden role="dialog" aria-modal="true" aria-labelledby="login-h">
   <div class="login-in">
-    <div class="eyebrow">Žiemos lyga · 2026 10 22 – 2027 03 01</div>
+    <div class="eyebrow">Žiemos lyga · 2026 10 22 – 2027 03 31</div>
     <h1>Sporto Lyga <span>2027</span></h1>
     <div id="step-name">
       <h2 id="login-h">Kas tu?</h2>
@@ -388,7 +388,8 @@ dialog::backdrop{background:rgba(6,11,16,.55)}
           <div class="posting-as">Registruoja: <b>–</b></div>
           <label class="full">Veikla<select id="f-sport"></select></label>
           <label><span id="f-unit">Atstumas (km)</span><input id="f-amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="10" required></label>
-          <label>Data<input id="f-date" type="date" required></label>
+          <label id="f-min-l">Trukmė (min.)<input id="f-min" type="number" inputmode="numeric" min="0" step="1" placeholder="55"></label>
+          <label id="f-date-l">Data<input id="f-date" type="date" required></label>
           <label class="full"><span id="f-note-l">Pastaba (neprivaloma)</span><input id="f-note" type="text" maxlength="80"></label>
           <div class="warn" id="f-warn" role="status" hidden><span id="f-warn-t"></span><button type="button" class="fix" id="f-fix" hidden></button></div>
           <div class="preview"><div class="rule" id="f-rule"></div><div class="val" id="f-pts">0</div></div>
@@ -511,6 +512,14 @@ const SPORT = Object.fromEntries(SPORTS.map(s=>[s.id,s]));
 /* Mažiausia veikla, kuri užskaitoma (km arba min.) */
 const MINS = {run:3, walk:3, bike:10, swim:0.3, ibike:20, gym:20, padel:20, basket:20, hiit:20, martial:20, xc:20, ski:20, other:20};
 function minText(id){ const m = MINS[id]; if(m==null) return ""; return id==="swim" ? `${Math.round(m*1000)} m` : SPORT[id].unit==="km" ? `${fmt(m)} km` : `${m} min.`; }
+function durText(m){ m = Math.round(m); return m >= 60 ? `${Math.floor(m/60)} val. ${String(m%60).padStart(2,"0")} min.` : `${m} min.`; }
+function paceText(e){
+  if(e.sport==="bike") return `${fmt(e.amount/(e.minutes/60))} km/h`;
+  const per = e.sport==="swim" ? e.minutes/(e.amount*10) : e.minutes/e.amount, mm = Math.floor(per), ss = Math.round((per-mm)*60);
+  const t = ss===60 ? `${mm+1}:00` : `${mm}:${String(ss).padStart(2,"0")}`;
+  return e.sport==="swim" ? `${t} /100 m` : `${t} /km`;
+}
+function durOf(e){ const s = SPORT[e.sport]; if(!s) return 0; return s.unit==="min" ? e.amount : (Number(e.minutes)||0); }
 function tooShort(e){ const m = MINS[e.sport]; return m!=null && e.amount < m - 1e-9; }
 
 /* ===== BONUSŲ DIENOS =====
@@ -518,23 +527,18 @@ function tooShort(e){ const m = MINS[e.sport]; return m!=null && e.amount < m - 
    kind "claim" – sportininkas pats įveda rezultatą (žingsnius, kalorijas); galima pateikti tą ir kitą dieną.
    rule.type: km (atstumas nurodytose veiklose), minutes (trukmė nurodytose veiklose), sports (skirtingų veiklų sk.), points (veiklos taškai) */
 const BONUSES = [
-  {id:"b13", date:"2026-10-24", kind:"claim", pts:10, title:"20 000 žingsnių",           desc:"Surink 20 000 žingsnių per dieną (pagal laikrodį ar telefoną).", field:"Žingsniai", unitLabel:"žingsnių", min:20000, max:200000},
-  {id:"b02", date:"2026-11-08", kind:"claim", pts:10, title:"30 000 žingsnių",           desc:"Surink 30 000 žingsnių per dieną (pagal laikrodį ar telefoną).", field:"Žingsniai", unitLabel:"žingsnių", min:30000, max:200000},
-  {id:"b03", date:"2026-11-23", kind:"auto",  pts:10, title:"Kariuomenės dienos treniruotė", desc:"Praleisk sporto salėje bent 60 min.", rule:{type:"minutes", sports:["gym"], min:60}},
-  {id:"b04", date:"2026-12-06", kind:"auto",  pts:10, title:"Ilgasis sekmadienis",       desc:"Surink bent 12 veiklos taškų per dieną – bet kokia veikla.", rule:{type:"points", min:12}},
-  {id:"b05", date:"2026-12-26", kind:"claim", pts:10, title:"Kalėdinių kalorijų deginimas", desc:"Sudegink bent 3 500 kalorijų per dieną – iš viso, įskaitant ramybės kalorijas (pagal laikrodį ar programėlę).", field:"Kalorijos iš viso (kcal)", unitLabel:"kcal", min:3500, max:15000},
-  {id:"b06", date:"2027-01-01", kind:"auto",  pts:10, title:"Naujametinis startas",      desc:"Pradėk metus aktyviai: surink bent 6 veiklos taškus – bet kokia veikla.", rule:{type:"points", min:6}},
-  {id:"b07", date:"2027-01-13", kind:"auto",  pts:10, title:"Sausio 13-osios kilometrai", desc:"Nubėk arba nueik bent 13 km per dieną.", rule:{type:"km", sports:["run","walk"], min:13}},
-  {id:"b12", date:"2027-01-22", kind:"claim", confirm:true, pts:10, title:"Alus už Žalgirį", desc:"Žalgiris žaidžia su Virtus – išgerk bent vieną alaus už Žalgirio pergalę.", field:"Alus", button:"Išgėriau alaus 🍺", min:1},
-  {id:"b08", date:"2027-01-24", kind:"auto",  pts:10, title:"Plaukimo diena",            desc:"Nuplauk bent 1 km.", rule:{type:"km", sports:["swim"], min:1}},
-  {id:"b14", date:"2027-02-07", kind:"auto",  pts:10, title:"Žaidimų diena",             desc:"Bent 60 min. padelio, teniso arba krepšinio.", rule:{type:"minutes", sports:["padel","basket"], min:60}},
-  {id:"b09", date:"2027-02-14", kind:"auto",  pts:10, title:"Dvigubas Valentinas",       desc:"Užregistruok bent 2 skirtingas veiklas tą pačią dieną.", rule:{type:"sports", min:2}},
-  {id:"b10", date:"2027-02-16", kind:"auto",  pts:10, title:"Vasario 16-osios iššūkis",  desc:"Surink bent 16 veiklos taškų per dieną.", rule:{type:"points", min:16}},
-  {id:"b11", date:"2027-03-01", kind:"claim", pts:10, title:"Finišo kalorijos",          desc:"Paskutinę dieną sudegink bent 3 000 kalorijų – iš viso, įskaitant ramybės kalorijas.", field:"Kalorijos iš viso (kcal)", unitLabel:"kcal", min:3000, max:15000},
+  {id:"b13", date:"2026-10-24", kind:"claim", pts:10, title:"20 000 žingsnių",       desc:"Surink 20 000 žingsnių per dieną (pagal laikrodį ar telefoną).", field:"Žingsniai", unitLabel:"žingsnių", min:20000, max:200000},
+  {id:"b20", date:"2027-01-01", kind:"auto",  pts:5,  title:"Naujametinis startas",  desc:"Pradėk metus aktyviai: bent 45 min. veiklos per dieną (bet kokia veikla).", rule:{type:"dayMinutes", min:45}},
+  {id:"b21", date:"2027-01-13", kind:"claim", pts:5,  title:"13 000 žingsnių",       desc:"Sausio 13-ąją surink bent 13 000 žingsnių (pagal laikrodį ar telefoną).", field:"Žingsniai", unitLabel:"žingsnių", min:13000, max:200000},
+  {id:"b22", date:"2027-01-22", kind:"claim", confirm:true, pts:5, title:"Alus už Žalgirį", desc:"Žalgiris žaidžia su Virtus – išgerk bent vieną alaus už Žalgirio pergalę.", field:"Alus", button:"Išgėriau alaus 🍺", min:1},
+  {id:"b23", date:"2027-02-14", kind:"auto",  pts:10, title:"Dvigubas Valentinas",   desc:"Atlik bent 2 skirtingas veiklas tą pačią dieną (pvz., bėgimas ir sporto salė; du ėjimai nesiskaito).", rule:{type:"sports", min:2}},
+  {id:"b24", date:"2027-02-16", kind:"claim", pts:10, title:"16 000 žingsnių",       desc:"Vasario 16-ąją surink bent 16 000 žingsnių (pagal laikrodį ar telefoną).", field:"Žingsniai", unitLabel:"žingsnių", min:16000, max:200000},
+  {id:"b25", date:"2027-03-11", kind:"auto",  pts:10, title:"Laisvės 90",            desc:"Bent 90 min. vienos veiklos metu (vienas įrašas, bet kokia veikla).", rule:{type:"singleMinutes", min:90}},
+  {id:"b26", date:"2027-03-31", kind:"auto",  pts:10, title:"Foto finišas",          desc:"Paskutinę dieną nuplauk bent 1 km.", rule:{type:"km", sports:["swim"], min:1}},
 ];
 const BONUS = Object.fromEntries(BONUSES.map(b=>[b.id,b]));
 
-const START = "2026-10-22", END = "2027-03-01", NEWYEAR = "2027-01-01";
+const START = "2026-10-22", END = "2027-03-31", NEWYEAR = "2027-01-01";
 const MONTHS = ["sausio","vasario","kovo","balandžio","gegužės","birželio","liepos","rugpjūčio","rugsėjo","spalio","lapkričio","gruodžio"];
 const MONTHS_NOM = ["Sausis","Vasaris","Kovas","Balandis","Gegužė","Birželis","Liepa","Rugpjūtis","Rugsėjis","Spalis","Lapkritis","Gruodis"];
 const $ = id => document.getElementById(id);
@@ -582,7 +586,7 @@ async function apiPost(body){
 }
 function clean(list){
   const LEGACY = {class:"hiit"}; // senų veiklų ID → naujos
-  return (list||[]).map(e=>({...e, reactions: (e.reactions && typeof e.reactions==='object') ? Object.fromEntries(Object.entries(e.reactions).filter(([n,v])=>ATHLETES.includes(n) && REACTIONS.includes(v))) : {}, sport: LEGACY[e.sport] || e.sport, amount:Number(e.amount), date:String(e.date||"").slice(0,10), note:String(e.note||"")}))
+  return (list||[]).map(e=>({...e, reactions: (e.reactions && typeof e.reactions==='object') ? Object.fromEntries(Object.entries(e.reactions).filter(([n,v])=>ATHLETES.includes(n) && REACTIONS.includes(v))) : {}, sport: LEGACY[e.sport] || e.sport, amount:Number(e.amount), minutes:Number(e.minutes)||0, date:String(e.date||"").slice(0,10), note:String(e.note||"")}))
     .filter(e=>e.id && ATHLETES.includes(e.athlete) && (SPORT[e.sport] || e.sport==="bonus") && e.amount>0 && /^\d{4}-\d{2}-\d{2}$/.test(e.date));
 }
 async function refresh(){
@@ -634,6 +638,8 @@ function autoBonusAwards(){
       if(r.type==="minutes") ok = day.filter(e=>r.sports.includes(e.sport)).reduce((s,e)=>s+e.amount,0) >= r.min;
       if(r.type==="sports") ok = new Set(day.map(e=>e.sport)).size >= r.min;
       if(r.type==="points") ok = day.reduce((s,e)=>s+pointsOf(e.sport,e.amount),0) >= r.min;
+      if(r.type==="dayMinutes") ok = day.reduce((s,e)=>s+durOf(e),0) >= r.min;
+      if(r.type==="singleMinutes") ok = day.some(e=>durOf(e) >= r.min);
       if(ok) out.push({athlete:a, date:b.date, b});
     }
   }
@@ -894,8 +900,9 @@ function setupForm(){
   fs.innerHTML = SPORTS.map(s=>`<option value="${s.id}">${s.name}</option>`).join("");
   const t = todayStr();
   $("f-date").value = t; $("f-date").max = t;
-  fs.addEventListener("change",()=>{ $("f-amount").value=""; updatePreview(); });
+  fs.addEventListener("change",()=>{ $("f-amount").value=""; $("f-min").value=""; updatePreview(); });
   $("f-amount").addEventListener("input",updatePreview);
+  $("f-min").addEventListener("input",updatePreview);
   ff.addEventListener("change",()=>{ feedLimit=25; renderFeed(items()); });
   $("more").addEventListener("click",()=>{ feedLimit+=25; renderFeed(items()); });
   $("form").addEventListener("submit",onSubmit);
@@ -921,15 +928,27 @@ function checkAmount(sport, amount){
   if(amount > lim) return {text:`${amountText(sport, amount)} – daugiau nei įprasta vienai veiklai. Pasitikrink.`};
   return null;
 }
+/* Trukmės (min.) tikrinimas nuotolio veikloms: tempas turi būti tikėtinas */
+const PACE = {run:[2.8, 15], walk:[6, 25], bike:[1, 12], swim:[10, 60]}; // min/km: [greičiausiai, lėčiausiai]
+function checkMinutes(sport, amount, mins){
+  const s = SPORT[sport]; if(!s || s.unit!=="km" || !(amount>0) || !(mins>0)) return null;
+  if(mins < 10) return {block:true, text:`${fmt(mins)} min. – per trumpai. Gal turėjai omeny ${fmt(mins)} val.?`, fix:Math.round(mins*60), fixText:`Pataisyti į ${Math.round(mins*60)} min.`, field:"f-min"};
+  if(!Number.isInteger(mins)) return {text:"Trukmę rašyk minutėmis, sveiku skaičiumi.", fix:Math.round(mins), fixText:`Pataisyti į ${Math.round(mins)} min.`, field:"f-min"};
+  const pace = mins/amount, [fast, slow] = PACE[sport] || [0, 999];
+  if(pace < fast) return {text:`${fmt(amount)} km per ${mins} min. – labai greitai${sport==="walk" ? " ėjimui (gal tai buvo bėgimas?)" : ""}. Pasitikrink.`};
+  if(pace > slow) return {text:`${fmt(amount)} km per ${mins} min. – labai lėtai. Pasitikrink trukmę.`};
+  return null;
+}
+function readMins(){ return parseFloat(String($("f-min").value).replace(",", ".")); }
 function updateWarn(){
   const sport = $("f-sport").value, amount = parseFloat(String($("f-amount").value).replace(",", "."));
-  const w = checkAmount(sport, amount);
+  const w = checkAmount(sport, amount) || checkMinutes(sport, amount, readMins());
   $("f-warn").hidden = !w;
   if(!w) return;
   $("f-warn").classList.toggle("block", !!w.block);
   $("f-warn-t").textContent = w.text;
   const fx = $("f-fix"); fx.hidden = w.fix == null;
-  if(w.fix != null){ fx.textContent = w.fixText; fx.onclick = ()=>{ $("f-amount").value = String(w.fix); updatePreview(); $("f-amount").focus(); }; }
+  if(w.fix != null){ const fid = w.field || "f-amount"; fx.textContent = w.fixText; fx.onclick = ()=>{ $(fid).value = String(w.fix); updatePreview(); $(fid).focus(); }; }
 }
 function updatePreview(){
   if(confirmSig){ confirmSig = null; $("f-submit").textContent = "Pridėti taškus"; say(""); }
@@ -939,6 +958,8 @@ function updatePreview(){
   $("f-note").required = needNote;
   const s = SPORT[$("f-sport").value];
   $("f-unit").textContent = s.unit==="km" ? "Atstumas (km)" : "Trukmė (min.)";
+  $("f-min-l").hidden = s.unit!=="km";
+  $("f-date-l").classList.toggle("full", s.unit==="km");
   $("f-amount").placeholder = s.unit==="km" ? "10" : "60";
   $("f-amount").step = s.unit==="km" ? "0.01" : "1";
   $("f-rule").textContent = (s.unit==="km" ? `${tsk(s.pts)} už ${s.per} km` : `${tsk(s.pts)} už valandą`) + ` · nuo ${minText(s.id)}`;
@@ -953,13 +974,16 @@ async function onSubmit(ev){
   if(!athlete) return say("Pirmiausia prisijunk – pasirink savo vardą.","err");
   if(!(amount>0)) return say(km ? "Įvesk atstumą kilometrais." : "Įvesk, kiek minučių sportavai.","err");
   if(km ? amount>300 : amount>720) return say("Skaičius per didelis vienai veiklai. Pasitikrink.","err");
-  const chk = checkAmount(sport, amount);
+  const mins = km ? readMins() : amount;
+  if(km && !(mins>0)){ $("f-min").focus(); return say("Įvesk veiklos trukmę minutėmis.","err"); }
+  if(km && mins > 720) return say("Trukmė per didelė vienai veiklai. Pasitikrink.","err");
+  const chk = checkAmount(sport, amount) || checkMinutes(sport, amount, mins);
   if(chk && chk.block) return say(chk.text, "err");
-  const sig = [sport, amount, date].join("|");
+  const sig = [sport, amount, mins, date].join("|");
   if(chk && confirmSig !== sig){
     confirmSig = sig;
     $("f-submit").textContent = "Taip, viskas teisinga";
-    return say(`Ar tikrai ${amountText(sport, amount)} (${SPORT[sport].name.toLowerCase()})? Jei teisingai – spausk dar kartą.`, "err");
+    return say(`Ar tikrai ${amountText(sport, amount)}${km ? ` per ${mins} min.` : ""} (${SPORT[sport].name.toLowerCase()})? Jei teisingai – spausk dar kartą.`, "err");
   }
   if(sport==="other" && note.length < 3){ $("f-note").focus(); return say("Parašyk pastaboje, kokia tai buvo veikla.","err"); }
   if(!date) return say("Pasirink datą.","err");
@@ -968,9 +992,9 @@ async function onSubmit(ev){
   confirmSig = null; $("f-submit").textContent = "Pridėti taškus";
   $("f-submit").disabled = true; busy = true; say("Saugoma…");
   try{
-    await apiPost({action:"add", athlete, sport, amount, date, note});
+    await apiPost(km ? {action:"add", athlete, sport, amount, minutes:Math.round(mins), date, note} : {action:"add", athlete, sport, amount, date, note});
     say(`Užskaityta: +${tsk(pointsOf(sport,amount))} (${athlete})`,"ok");
-    $("f-amount").value=""; $("f-note").value=""; updatePreview(); $("f-warn").hidden = true;
+    $("f-amount").value=""; $("f-min").value=""; $("f-note").value=""; updatePreview(); $("f-warn").hidden = true;
   }catch(e){
     say(String(e && e.message)==="too_short" ? `Per trumpa veikla. Užskaitoma nuo ${minText(sport)}` : "Nepavyko išsaugoti. Patikrink ryšį ir bandyk dar kartą.","err");
   }finally{ $("f-submit").disabled = false; busy = false; refresh(); }
@@ -996,7 +1020,7 @@ function renderFeed(all){
     } else {
       const e = it.e, s = SPORT[e.sport];
       li.querySelector(".t").textContent = `${e.athlete} · ${s.name}`;
-      li.querySelector(".m").textContent = `${prettyDate(e.date)} · ${amountText(e.sport,e.amount)}`;
+      li.querySelector(".m").textContent = `${prettyDate(e.date)} · ${amountText(e.sport,e.amount)}` + (s.unit==="km" && e.minutes ? ` · ${durText(e.minutes)} · ${paceText(e)}` : "");
       li.querySelector(".note").textContent = e.note || "";
     }
     li.querySelector(".p").textContent = "+"+fmt(it.pts);

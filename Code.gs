@@ -8,7 +8,7 @@
 const SHEET_NAME = 'Veiklos';
 const ATHLETES = ['Edvinas', 'Tomas', 'Vygantas', 'Justas', 'Paulius', 'Eduardas', 'Dainius'];
 // Veiklų sąrašas tikrinamas programėlėje, todėl keičiant veiklas šio kodo keisti nereikia.
-const HEADERS = ['id', 'athlete', 'sport', 'amount', 'date', 'note', 'createdAt', 'reactions'];
+const HEADERS = ['id', 'athlete', 'sport', 'amount', 'date', 'note', 'createdAt', 'reactions', 'minutes'];
 const REACTIONS = ['💪', '🤯', '🖕', '👍'];
 // Mažiausia užskaitoma veikla (km arba min.)
 const MINS = { run: 3, walk: 3, bike: 10, swim: 0.3, ibike: 20, gym: 20, padel: 20, basket: 20, hiit: 20, martial: 20, xc: 20, ski: 20, other: 20 };
@@ -111,7 +111,8 @@ function doGet(e) {
     date: dateStr_(r[4]),
     note: String(r[5] || ''),
     createdAt: r[6] instanceof Date ? r[6].toISOString() : String(r[6] || ''),
-    reactions: parseReactions_(r[7])
+    reactions: parseReactions_(r[7]),
+    minutes: Number(r[8]) || 0
   }));
   const cv = chatSheet_().getDataRange().getValues();
   cv.shift();
@@ -146,7 +147,10 @@ function doPost(e) {
       const tomorrow = Utilities.formatDate(new Date(Date.now() + 864e5), SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone(), 'yyyy-MM-dd');
       if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > tomorrow) return json_({ ok: false, error: 'date' });
       const id = Utilities.getUuid();
-      sh.appendRow([id, body.athlete, body.sport, amount, date, String(body.note || '').slice(0, 80), new Date().toISOString()]);
+      const minutes = Number(body.minutes) || '';
+      if (minutes !== '' && (minutes < 1 || minutes > 720)) return json_({ ok: false, error: 'minutes' });
+      // I stulpelis – trukmė minutėmis (nuotolio veikloms)
+      sh.appendRow([id, body.athlete, body.sport, amount, date, String(body.note || '').slice(0, 80), new Date().toISOString(), '', minutes]);
       return json_({ ok: true, id: id });
     }
 

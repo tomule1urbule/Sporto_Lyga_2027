@@ -514,6 +514,7 @@ function tooShort(e){ const m = MINS[e.sport]; return m!=null && e.amount < m - 
    kind "claim" – sportininkas pats įveda rezultatą (žingsnius, kalorijas); galima pateikti tą ir kitą dieną.
    rule.type: km (atstumas nurodytose veiklose), minutes (trukmė nurodytose veiklose), sports (skirtingų veiklų sk.), points (veiklos taškai) */
 const BONUSES = [
+  {id:"b13", date:"2026-10-24", kind:"claim", pts:10, title:"20 000 žingsnių",           desc:"Surink 20 000 žingsnių per dieną (pagal laikrodį ar telefoną).", field:"Žingsniai", unitLabel:"žingsnių", min:20000, max:200000},
   {id:"b02", date:"2026-11-08", kind:"claim", pts:10, title:"30 000 žingsnių",           desc:"Surink 30 000 žingsnių per dieną (pagal laikrodį ar telefoną).", field:"Žingsniai", unitLabel:"žingsnių", min:30000, max:200000},
   {id:"b03", date:"2026-11-23", kind:"auto",  pts:10, title:"Kariuomenės dienos treniruotė", desc:"Praleisk sporto salėje bent 60 min.", rule:{type:"minutes", sports:["gym"], min:60}},
   {id:"b04", date:"2026-12-06", kind:"auto",  pts:10, title:"Ilgasis sekmadienis",       desc:"Nubėk arba nueik bent 15 km per dieną.", rule:{type:"km", sports:["run","walk"], min:15}},

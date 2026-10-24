@@ -527,13 +527,12 @@ function tooShort(e){ const m = MINS[e.sport]; return m!=null && e.amount < m - 
    kind "claim" – sportininkas pats įveda rezultatą (žingsnius, kalorijas); galima pateikti tą ir kitą dieną.
    rule.type: km (atstumas nurodytose veiklose), minutes (trukmė nurodytose veiklose), sports (skirtingų veiklų sk.), points (veiklos taškai) */
 const BONUSES = [
-  {id:"b13", date:"2026-10-24", kind:"claim", pts:10, title:"20 000 žingsnių",       desc:"Surink 20 000 žingsnių per dieną (pagal laikrodį ar telefoną).", field:"Žingsniai", unitLabel:"žingsnių", min:20000, max:200000},
   {id:"b20", date:"2027-01-01", kind:"auto",  pts:5,  title:"Naujametinis startas",  desc:"Pradėk metus aktyviai: bent 45 min. veiklos per dieną (bet kokia veikla).", rule:{type:"dayMinutes", min:45}},
   {id:"b21", date:"2027-01-13", kind:"claim", pts:5,  title:"13 000 žingsnių",       desc:"Sausio 13-ąją surink bent 13 000 žingsnių (pagal laikrodį ar telefoną).", field:"Žingsniai", unitLabel:"žingsnių", min:13000, max:200000},
   {id:"b22", date:"2027-01-22", kind:"claim", confirm:true, pts:5, title:"Alus už Žalgirį", desc:"Žalgiris žaidžia su Virtus – išgerk bent vieną alaus už Žalgirio pergalę.", field:"Alus", button:"Išgėriau alaus 🍺", min:1},
   {id:"b23", date:"2027-02-14", kind:"auto",  pts:10, title:"Dvigubas Valentinas",   desc:"Atlik bent 2 skirtingas veiklas tą pačią dieną (pvz., bėgimas ir sporto salė; du ėjimai nesiskaito).", rule:{type:"sports", min:2}},
   {id:"b24", date:"2027-02-16", kind:"claim", pts:10, title:"16 000 žingsnių",       desc:"Vasario 16-ąją surink bent 16 000 žingsnių (pagal laikrodį ar telefoną).", field:"Žingsniai", unitLabel:"žingsnių", min:16000, max:200000},
-  {id:"b25", date:"2027-03-11", kind:"auto",  pts:10, title:"Laisvės 90",            desc:"Bent 90 min. vienos veiklos metu (vienas įrašas, bet kokia veikla).", rule:{type:"singleMinutes", min:90}},
+  {id:"b25", date:"2027-03-11", kind:"auto",  pts:10, title:"Laisvės 90 minučių",            desc:"Bent 90 min. vienos veiklos metu (vienas įrašas, bet kokia veikla).", rule:{type:"singleMinutes", min:90}},
   {id:"b26", date:"2027-03-31", kind:"auto",  pts:10, title:"Foto finišas",          desc:"Paskutinę dieną nuplauk bent 1 km.", rule:{type:"km", sports:["swim"], min:1}},
 ];
 const BONUS = Object.fromEntries(BONUSES.map(b=>[b.id,b]));

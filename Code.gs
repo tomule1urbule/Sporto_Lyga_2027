@@ -11,7 +11,7 @@ const ATHLETES = ['Edvinas', 'Tomas', 'Vygantas', 'Justas', 'Paulius', 'Eduardas
 const HEADERS = ['id', 'athlete', 'sport', 'amount', 'date', 'note', 'createdAt', 'reactions'];
 const REACTIONS = ['💪', '🤯', '🖕', '👍'];
 // Mažiausia užskaitoma veikla (km arba min.)
-const MINS = { run: 3, walk: 3, bike: 10, swim: 0.3, ibike: 20, gym: 20, padel: 20, basket: 20, hiit: 20, xc: 20, ski: 20, other: 20 };
+const MINS = { run: 3, walk: 3, bike: 10, swim: 0.3, ibike: 20, gym: 20, padel: 20, basket: 20, hiit: 20, martial: 20, xc: 20, ski: 20, other: 20 };
 
 // Reakcijos saugomos H stulpelyje: "Vardas:emoji,Vardas:emoji"
 function parseReactions_(v) {

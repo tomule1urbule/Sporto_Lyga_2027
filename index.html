@@ -708,6 +708,8 @@ function renderBonusCard(all){
   const lateClaim = !today && bs.find(b=>b.date===y && b.kind==="claim");
   const b = today || lateClaim;
   if(!b){ sec.hidden = true; return; }
+  // Jau gavęs šį bonusą žaidėjas kortelės nebemato
+  if(ME && all.some(i=>i.kind==="bonus" && i.athlete===ME && i.b.id===b.id)){ sec.hidden = true; sec.innerHTML = ""; sec.dataset.bid = ""; return; }
   const live = !!(today || lateClaim);
   const typing = $("b-val") && (sec.contains(document.activeElement) || $("b-val").value);
   if(typing && sec.dataset.bid===b.id) return;

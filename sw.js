@@ -1,5 +1,5 @@
 /* Sporto Lyga 2027 – service worker: programėlė veikia kaip įdiegta, o atnaujinimai pasiekia iškart */
-const CACHE = "sl27-v3";
+const CACHE = "sl27-v4";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png", "./favicon.png"];
 
 self.addEventListener("install", e => {

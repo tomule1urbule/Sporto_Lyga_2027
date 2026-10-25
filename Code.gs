@@ -23,7 +23,7 @@ function parseReactions_(v) {
 const COLORS_KEY = 'colors_v2';
 function colors_() { try { return JSON.parse(PropertiesService.getScriptProperties().getProperty(COLORS_KEY) || '{}'); } catch (e) { return {}; } }
 const CHAT_SHEET = 'Pokalbiai';
-const CHAT_HEADERS = ['id', 'athlete', 'text', 'createdAt', 'likes', 'image'];
+const CHAT_HEADERS = ['id', 'athlete', 'text', 'createdAt', 'likes', 'image', 'replyTo'];
 // Nuotraukos saugomos atskirame lape dalimis (langelyje telpa iki 50 000 simbolių)
 const IMG_SHEET = 'Nuotraukos';
 const IMG_CHUNK = 45000;
@@ -166,12 +166,29 @@ function doGet(e) {
   const messages = cv.filter(r => r[0]).slice(-200).map(r => ({
     likes: String(r[4] || '').split(',').filter(Boolean),
     image: String(r[5] || ''),
+    replyTo: String(r[6] || ''),
     id: String(r[0]),
     athlete: String(r[1]),
     text: String(r[2] || '').replace(/^'/, ''),
     createdAt: r[3] instanceof Date ? r[3].toISOString() : String(r[3] || '').replace(/^'/, '')
   }));
-  return json_({ ok: true, likesV: 1, reactV: 1, colorsV: 1, imgV: 1, actImgV: 1, colors: colors_(), entries: entries, messages: messages });
+  return json_({ ok: true, likesV: 1, reactV: 1, colorsV: 1, imgV: 1, actImgV: 1, editV: 1, replyV: 1, colors: colors_(), entries: entries, messages: messages });
+}
+
+// Bendras veiklos duomenų tikrinimas (pridedant ir redaguojant)
+function checkEntry_(body) {
+  const amount = Number(body.amount);
+  const date = String(body.date || '');
+  if (ATHLETES.indexOf(body.athlete) < 0) return { error: 'athlete' };
+  if (!/^[a-z]{2,12}$/.test(String(body.sport))) return { error: 'sport' };
+  if (!(amount > 0) || amount > 720) return { error: 'amount' };
+  if (MINS[body.sport] != null && amount < MINS[body.sport] - 1e-9) return { error: 'too_short' };
+  // Ateities datų neleidžiama (+1 d. atsarga dėl laiko juostų)
+  const tomorrow = Utilities.formatDate(new Date(Date.now() + 864e5), SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone(), 'yyyy-MM-dd');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > tomorrow) return { error: 'date' };
+  const minutes = Number(body.minutes) || '';
+  if (minutes !== '' && (minutes < 1 || minutes > 720)) return { error: 'minutes' };
+  return { amount: amount, date: date, minutes: minutes, note: String(body.note || '').slice(0, 80) };
 }
 
 function doPost(e) {
@@ -184,24 +201,45 @@ function doPost(e) {
     const sh = sheet_();
 
     if (body.action === 'add') {
-      const amount = Number(body.amount);
-      const date = String(body.date || '');
-      if (ATHLETES.indexOf(body.athlete) < 0) return json_({ ok: false, error: 'athlete' });
-      if (!/^[a-z]{2,12}$/.test(String(body.sport))) return json_({ ok: false, error: 'sport' });
-      if (!(amount > 0) || amount > 720) return json_({ ok: false, error: 'amount' });
-      if (MINS[body.sport] != null && amount < MINS[body.sport] - 1e-9) return json_({ ok: false, error: 'too_short' });
-      // Ateities datų neleidžiama (+1 d. atsarga dėl laiko juostų)
-      const tomorrow = Utilities.formatDate(new Date(Date.now() + 864e5), SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone(), 'yyyy-MM-dd');
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > tomorrow) return json_({ ok: false, error: 'date' });
+      const c = checkEntry_(body);
+      if (c.error) return json_({ ok: false, error: c.error });
+      const amount = c.amount, date = c.date, minutes = c.minutes;
       const id = Utilities.getUuid();
-      const minutes = Number(body.minutes) || '';
-      if (minutes !== '' && (minutes < 1 || minutes > 720)) return json_({ ok: false, error: 'minutes' });
       const image = String(body.image || '');
       if (image && !validImage_(image, 400000)) return json_({ ok: false, error: 'image' });
       const imageId = image ? storeImage_(image) : '';
       // I stulpelis – trukmė minutėmis (nuotolio veikloms), J – veiklos nuotraukos ID
-      sh.appendRow([id, body.athlete, body.sport, amount, date, String(body.note || '').slice(0, 80), new Date().toISOString(), '', minutes, imageId]);
+      sh.appendRow([id, body.athlete, body.sport, amount, date, c.note, new Date().toISOString(), '', minutes, imageId]);
       return json_({ ok: true, id: id, image: imageId });
+    }
+
+    if (body.action === 'edit') {
+      // Redaguoti galima tik savo veiklą (ne bonusą)
+      const c = checkEntry_(body);
+      if (c.error) return json_({ ok: false, error: c.error });
+      if (body.sport === 'bonus') return json_({ ok: false, error: 'sport' });
+      const ids = sh.getRange(1, 1, sh.getLastRow(), 2).getValues();
+      for (let i = ids.length - 1; i >= 1; i--) {
+        if (String(ids[i][0]) !== String(body.id)) continue;
+        if (String(ids[i][1]) !== body.athlete) return json_({ ok: false, error: 'forbidden' });
+        const row = i + 1;
+        const oldImg = String(sh.getRange(row, 10).getValue() || '');
+        if (String(sh.getRange(row, 3).getValue()) === 'bonus') return json_({ ok: false, error: 'sport' });
+        let imageId = oldImg;
+        const image = String(body.image || '');
+        if (image) {
+          if (!validImage_(image, 400000)) return json_({ ok: false, error: 'image' });
+          imageId = storeImage_(image);
+          deleteImage_(oldImg);
+        } else if (body.removeImage) {
+          deleteImage_(oldImg);
+          imageId = '';
+        }
+        sh.getRange(row, 3, 1, 4).setValues([[body.sport, c.amount, c.date, c.note]]);
+        sh.getRange(row, 9, 1, 2).setValues([[c.minutes, imageId]]);
+        return json_({ ok: true, id: String(body.id), image: imageId });
+      }
+      return json_({ ok: false, error: 'not_found' });
     }
 
     if (body.action === 'chat') {
@@ -212,8 +250,9 @@ function doPost(e) {
       if (!text && !image) return json_({ ok: false, error: 'text' });
       const id = Utilities.getUuid();
       const imageId = image ? storeImage_(image) : '';
-      // C ir D stulpeliai suformatuoti kaip tekstas, todėl Sheets jų nepaverčia formule ar data
-      chatSheet_().appendRow([id, body.athlete, text, new Date().toISOString(), '', imageId]);
+      const replyTo = /^[\w-]{1,64}$/.test(String(body.replyTo || '')) ? String(body.replyTo) : '';
+      // C ir D stulpeliai suformatuoti kaip tekstas, todėl Sheets jų nepaverčia formule ar data; G – į kurią žinutę atsakoma
+      chatSheet_().appendRow([id, body.athlete, text, new Date().toISOString(), '', imageId, replyTo]);
       return json_({ ok: true, id: id, image: imageId });
     }
 

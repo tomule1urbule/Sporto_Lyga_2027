@@ -193,6 +193,13 @@ button{font:inherit;cursor:pointer;border-radius:4px}
 .like.on{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}
 .like:disabled{opacity:.6}
 .likers{font-size:11.5px;color:var(--muted)}
+.quote{display:block;width:100%;text-align:left;background:none;border:0;border-left:3px solid var(--line);padding:1px 8px;margin:3px 0 4px;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.quote b{color:var(--ink);font-weight:600}
+.msgs li.flash .bubble{animation:flash 1.4s ease-out}
+@keyframes flash{from{background:color-mix(in srgb,var(--accent) 20%,transparent)}to{background:transparent}}
+.replybar,.editbar{grid-column:1 / -1;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);border-left:3px solid var(--accent);padding:3px 8px;min-width:0}
+.replybar span,.editbar span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.replybar b,.editbar b{color:var(--ink)}
 .msgs .emptychat{color:var(--muted);font-size:14px;justify-content:center;padding:14px 0}
 .chatform{border-top:1px solid var(--line);padding:12px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px}
 .chatform select{grid-column:1 / -1;font-size:14px;padding:7px 8px}
@@ -389,6 +396,7 @@ dialog::backdrop{background:rgba(6,11,16,.55)}
       <div class="card">
         <form id="form" novalidate>
           <div class="posting-as">Registruoja: <b>–</b></div>
+          <div class="editbar" id="f-edit" hidden><span id="f-edit-t"></span><button type="button" class="link" id="f-edit-x">Atšaukti</button></div>
           <label class="full">Veikla<select id="f-sport"></select></label>
           <label><span id="f-unit">Atstumas (km)</span><input id="f-amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="10" required></label>
           <label id="f-min-l">Trukmė (min.)<input id="f-min" type="number" inputmode="numeric" min="0" step="1" placeholder="55"></label>
@@ -396,7 +404,7 @@ dialog::backdrop{background:rgba(6,11,16,.55)}
           <label class="full"><span id="f-note-l">Pastaba (neprivaloma)</span><input id="f-note" type="text" maxlength="80"></label>
           <div class="photo-row" id="f-photo" hidden>
             <label class="attach wide" id="f-attach-l"><input id="f-file" type="file" accept="image/*" hidden>📷 Pridėti nuotrauką <span>(neprivaloma)</span></label>
-            <div class="pending-img" id="f-pending" hidden><img id="f-thumb" alt=""><span>Nuotrauka paruošta</span><button type="button" class="link" id="f-unattach">Pašalinti</button></div>
+            <div class="pending-img" id="f-pending" hidden><img id="f-thumb" alt=""><span id="f-pending-t">Nuotrauka paruošta</span><button type="button" class="link" id="f-unattach">Pašalinti</button></div>
           </div>
           <div class="warn" id="f-warn" role="status" hidden><span id="f-warn-t"></span><button type="button" class="fix" id="f-fix" hidden></button></div>
           <div class="preview"><div class="rule" id="f-rule"></div><div class="val" id="f-pts">0</div></div>
@@ -427,6 +435,7 @@ dialog::backdrop{background:rgba(6,11,16,.55)}
       <div class="chat card">
         <ul class="msgs" id="msgs" aria-live="polite"></ul>
         <form class="chatform" id="chatform" novalidate>
+          <div class="replybar" id="c-reply" hidden><span id="c-reply-t"></span><button type="button" class="link" id="c-reply-x" aria-label="Atšaukti atsakymą">✕</button></div>
           <label class="attach" id="c-attach-l" title="Pridėti nuotrauką" aria-label="Pridėti nuotrauką"><input id="c-file" type="file" accept="image/*" hidden>📷</label>
           <textarea id="c-text" rows="1" maxlength="500" placeholder="Parašyk žinutę…" aria-label="Žinutė"></textarea>
           <button class="send" id="c-send" type="submit">Siųsti</button>
@@ -603,7 +612,7 @@ async function refresh(){
     applyData(data);
     lsSet("sl27-data", JSON.stringify(data));
     const n = entries.filter(e=>e.sport!=="bonus").length;
-    $("status").textContent = n ? `${n} ${plural(n,"veikla","veiklos","veiklų")} · atnaujinama automatiškai` : "Laukiama pirmos veiklos";
+    if(Date.now() > statusHold) $("status").textContent = n ? `${n} ${plural(n,"veikla","veiklos","veiklų")} · atnaujinama automatiškai` : "Laukiama pirmos veiklos";
     renderAll();
   }catch(_){
     $("status").textContent = "Nepavyko prisijungti prie lygos. Bandoma iš naujo…";
@@ -620,6 +629,8 @@ function applyData(data){
     reactSupported = data.reactV === 1;
     imagesSupported = data.imgV === 1;
     actImagesSupported = data.actImgV === 1;
+    editSupported = data.editV === 1;
+    replySupported = data.replyV === 1;
     $("f-photo").hidden = !actImagesSupported;
     colorsSupported = data.colorsV === 1;
     PLAYER_COLORS = Object.fromEntries(Object.entries(data.colors||{}).filter(([n,v])=>ATHLETES.includes(n) && /^p\d{1,2}$/.test(v)));
@@ -959,7 +970,7 @@ function updateWarn(){
   if(w.fix != null){ const fid = w.field || "f-amount"; fx.textContent = w.fixText; fx.onclick = ()=>{ $(fid).value = String(w.fix); updatePreview(); $(fid).focus(); }; }
 }
 function updatePreview(){
-  if(confirmSig){ confirmSig = null; $("f-submit").textContent = "Pridėti taškus"; say(""); }
+  if(confirmSig){ confirmSig = null; $("f-submit").textContent = submitLabel(); say(""); }
   updateWarn();
   const needNote = $("f-sport").value === "other";
   $("f-note-l").textContent = needNote ? "Pastaba (privaloma) – kokia veikla?" : "Pastaba (neprivaloma)";
@@ -997,18 +1008,27 @@ async function onSubmit(ev){
   if(!date) return say("Pasirink datą.","err");
   if(date > t) return say("Negalima registruoti veiklos ateityje.","err");
   if(!API_URL) return say("Lyga dar neprijungta prie duomenų bazės.","err");
-  confirmSig = null; $("f-submit").textContent = "Pridėti taškus";
+  confirmSig = null; $("f-submit").textContent = submitLabel();
   $("f-submit").disabled = true; busy = true; say("Saugoma…");
   try{
-    const body = km ? {action:"add", athlete, sport, amount, minutes:Math.round(mins), date, note} : {action:"add", athlete, sport, amount, date, note};
+    const act = editing ? "edit" : "add";
+    const body = km ? {action:act, athlete, sport, amount, minutes:Math.round(mins), date, note} : {action:act, athlete, sport, amount, date, note};
+    if(editing){ body.id = editing.id; if(editRemoveImage && !pendingActImage) body.removeImage = true; }
     const img = actImagesSupported ? pendingActImage : null;
     if(img){ body.image = img; say("Saugoma su nuotrauka…"); }
     const r = await apiPost(body);
     if(img && r && r.image) IMG_CACHE[r.image] = img;
-    say(`Užskaityta: +${tsk(pointsOf(sport,amount))} (${athlete})`,"ok");
-    $("f-amount").value=""; $("f-min").value=""; $("f-note").value=""; clearActImage(); updatePreview(); $("f-warn").hidden = true;
+    if(editing){
+      const e = entries.find(x=>x.id===editing.id);
+      if(e) Object.assign(e, {sport, amount, minutes: km ? Math.round(mins) : 0, date, note, image: (r && r.image) || ""});
+      exitEdit(); showTab("feed"); $("status").textContent = "Pakeitimai išsaugoti ✓"; statusHold = Date.now() + 4000;
+    } else {
+      say(`Užskaityta: +${tsk(pointsOf(sport,amount))} (${athlete})`,"ok");
+      $("f-amount").value=""; $("f-min").value=""; $("f-note").value=""; clearActImage(); updatePreview(); $("f-warn").hidden = true;
+    }
   }catch(e){
-    say(String(e && e.message)==="too_short" ? `Per trumpa veikla. Užskaitoma nuo ${minText(sport)}` : "Nepavyko išsaugoti. Patikrink ryšį ir bandyk dar kartą.","err");
+    const er = String(e && e.message);
+    say(er==="too_short" ? `Per trumpa veikla. Užskaitoma nuo ${minText(sport)}` : er==="not_found" ? "Šios veiklos nebėra – gal ji ištrinta." : "Nepavyko išsaugoti. Patikrink ryšį ir bandyk dar kartą.","err");
   }finally{ $("f-submit").disabled = false; busy = false; refresh(); }
 }
 
@@ -1074,6 +1094,11 @@ function renderFeed(all){
         const n=document.createElement("button"); n.className="link"; n.textContent="Palikti"; n.onclick=()=>{pendingDelete=null; renderFeed(items());};
         acts.append(y,n);
       } else {
+        if(editSupported && it.kind!=="bonus"){
+          const ed=document.createElement("button"); ed.className="link"; ed.textContent="Redaguoti";
+          ed.setAttribute("aria-label",`Redaguoti: ${li.querySelector(".t").textContent}, ${prettyDate(it.date)}`);
+          ed.onclick=()=>startEdit(it.e); acts.append(ed);
+        }
         const d=document.createElement("button"); d.className="link"; d.textContent="Ištrinti";
         d.setAttribute("aria-label",`Ištrinti: ${li.querySelector(".t").textContent}, ${prettyDate(it.date)}`);
         d.onclick=()=>{pendingDelete=id; renderFeed(items());}; acts.append(d);
@@ -1126,8 +1151,15 @@ function renderChat(){
     const li=document.createElement("li"); li.className="emptychat"; li.textContent="Dar nėra žinučių. Parašyk pirmas!"; ul.append(li);
   }
   for(const m of list){
-    const li = document.createElement("li");
+    const li = document.createElement("li"); li.dataset.id = m.id;
     li.innerHTML = '<span class="av"></span><div class="bubble"><div class="hd"><span class="nm"></span><span class="tm"></span><span class="rm"></span></div><div class="tx"></div><div class="likes"></div></div>';
+    if(m.replyTo){
+      const par = messages.find(x=>x.id===m.replyTo);
+      const q = document.createElement("button"); q.type = "button"; q.className = "quote";
+      if(par){ q.innerHTML = "↩ <b></b>: <span></span>"; q.querySelector("b").textContent = par.athlete; q.querySelector("span").textContent = snippet(par); q.onclick = ()=>jumpTo(par.id); }
+      else { q.textContent = "↩ Ištrinta žinutė"; q.disabled = true; }
+      li.querySelector(".bubble").insertBefore(q, li.querySelector(".tx"));
+    }
     const ci = ATHLETES.indexOf(m.athlete);
     li.querySelector(".av").style.background = col(m.athlete);
     li.querySelector(".av").textContent = m.athlete.charAt(0);
@@ -1149,6 +1181,10 @@ function renderChat(){
     lb.querySelector(".c").textContent = likers.length ? String(likers.length) : "Patinka";
     lb.onclick = ()=>toggleLike(m.id);
     lk.append(lb);
+    if(replySupported){
+      const rb = document.createElement("button"); rb.type="button"; rb.className="like"; rb.textContent="↩ Atsakyti";
+      rb.setAttribute("aria-label", `Atsakyti ${m.athlete} žinutei`); rb.onclick = ()=>startReply(m); lk.append(rb);
+    }
     if(likers.length){ const w=document.createElement("span"); w.className="likers"; w.textContent = likers.join(", "); lk.append(w); }
     const rm = li.querySelector(".rm");
     if(m.athlete!==ME){ /* svetimų žinučių trinti negalima */ }
@@ -1165,6 +1201,7 @@ function renderChat(){
   if(atBottom) ul.scrollTop = ul.scrollHeight;
 }
 let pendingImage = null, imagesSupported = false, actImagesSupported = false, pendingActImage = null;
+let statusHold = 0, editSupported = false, replySupported = false, editing = null, editRemoveImage = false, replyingTo = null;
 const IMG_CACHE = {};
 function clearPending(){ pendingImage = null; $("c-pending").hidden = true; $("c-file").value = ""; }
 /* Nuotrauka sumažinama telefone (iki 1280 px, JPEG), kad greitai keliautų ir tilptų lentelėje */
@@ -1203,7 +1240,36 @@ async function openImage(m, btn, cap){
   img.src = data;
   if(dlg.showModal) dlg.showModal(); else dlg.setAttribute("open","");
 }
-function clearActImage(){ pendingActImage = null; $("f-pending").hidden = true; $("f-attach-l").hidden = false; $("f-file").value = ""; }
+function clearActImage(){ pendingActImage = null; $("f-pending").hidden = true; $("f-attach-l").hidden = false; $("f-file").value = ""; $("f-thumb").hidden = false; $("f-pending-t").textContent = "Nuotrauka paruošta"; }
+function submitLabel(){ return editing ? "Išsaugoti pakeitimus" : "Pridėti taškus"; }
+/* Redagavimas: ta pati forma užpildoma esamos veiklos duomenimis */
+function startEdit(e){
+  if(!e || e.athlete!==ME) return;
+  editing = e; editRemoveImage = false; clearActImage();
+  showTab("log");
+  $("h-log").textContent = "Redaguoti veiklą";
+  $("f-edit").hidden = false;
+  $("f-edit-t").innerHTML = "Redaguojama: <b></b>";
+  $("f-edit-t").querySelector("b").textContent = `${SPORT[e.sport].name}, ${prettyDate(e.date)}`;
+  $("f-sport").value = e.sport;
+  $("f-amount").value = String(e.amount);
+  $("f-min").value = SPORT[e.sport].unit==="km" && e.minutes ? String(e.minutes) : "";
+  $("f-date").value = e.date;
+  $("f-note").value = e.note || "";
+  if(e.image){
+    $("f-pending").hidden = false; $("f-attach-l").hidden = true;
+    const t = IMG_CACHE[e.image]; $("f-thumb").hidden = !t; if(t) $("f-thumb").src = t;
+    $("f-pending-t").textContent = "📷 Pridėta nuotrauka";
+  }
+  confirmSig = null; $("f-submit").textContent = submitLabel(); say(""); updatePreview();
+  $("f-amount").focus({preventScroll:true});
+}
+function exitEdit(){
+  editing = null; editRemoveImage = false; clearActImage();
+  $("h-log").textContent = "Registruoti veiklą"; $("f-edit").hidden = true;
+  $("f-amount").value=""; $("f-min").value=""; $("f-note").value=""; $("f-date").value = todayStr();
+  confirmSig = null; $("f-submit").textContent = submitLabel(); say(""); updatePreview(); $("f-warn").hidden = true;
+}
 function setupActPhoto(){
   $("f-file").addEventListener("change", async ()=>{
     const f = $("f-file").files[0]; if(!f) return;
@@ -1212,12 +1278,28 @@ function setupActPhoto(){
     try{
       // Veiklos nuotraukos mažesnės (iki 1024 px, ~100 KB), kad lentelė neišsipūstų
       pendingActImage = await compressImage(f, 1024, 160000);
-      $("f-thumb").src = pendingActImage; $("f-pending").hidden = false; $("f-attach-l").hidden = true; say("");
+      $("f-thumb").src = pendingActImage; $("f-thumb").hidden = false; $("f-pending-t").textContent = "Nuotrauka paruošta";
+      $("f-pending").hidden = false; $("f-attach-l").hidden = true; say("");
     }catch(_){ clearActImage(); say("Šios nuotraukos nepavyko atidaryti. Pabandyk kitą (JPG arba PNG).","err"); }
   });
-  $("f-unattach").onclick = clearActImage;
+  $("f-unattach").onclick = ()=>{ if(editing && editing.image) editRemoveImage = true; clearActImage(); };
+  $("f-edit-x").onclick = ()=>{ exitEdit(); showTab("feed"); };
 }
+function snippet(m){ const t = String(m.text||"").replace(/\s+/g," ").trim(); return t ? (t.length>70 ? t.slice(0,70)+"…" : t) : "📷 Nuotrauka"; }
+function jumpTo(id){
+  const li = $("msgs").querySelector(`li[data-id="${CSS.escape(id)}"]`); if(!li) return;
+  li.scrollIntoView({block:"center", behavior:"smooth"});
+  li.classList.remove("flash"); void li.offsetWidth; li.classList.add("flash");
+}
+function startReply(m){
+  replyingTo = m; $("c-reply").hidden = false;
+  $("c-reply-t").innerHTML = "↩ Atsakymas – <b></b>: "; $("c-reply-t").querySelector("b").textContent = m.athlete;
+  $("c-reply-t").append(snippet(m));
+  $("c-text").focus();
+}
+function clearReply(){ replyingTo = null; $("c-reply").hidden = true; }
 function setupChat(){
+  $("c-reply-x").addEventListener("click", clearReply);
   const ta = $("c-text");
   $("c-file").addEventListener("change", async ()=>{
     const f = $("c-file").files[0]; if(!f) return;
@@ -1246,10 +1328,13 @@ function setupChat(){
     try{
       if(pendingImage) say3("Siunčiama nuotrauka…");
       const img = pendingImage;
-      const r = await apiPost(img ? {action:"chat", athlete, text, image:img} : {action:"chat", athlete, text});
+      const body = img ? {action:"chat", athlete, text, image:img} : {action:"chat", athlete, text};
+      const rt = replyingTo && replySupported ? replyingTo.id : "";
+      if(rt) body.replyTo = rt;
+      const r = await apiPost(body);
       if(img && r.image) IMG_CACHE[r.image] = img;
-      messages.push({id:r.id||("tmp"+Date.now()), athlete, text, image:r.image||"", likes:[], createdAt:new Date().toISOString()});
-      say3(""); clearPending();
+      messages.push({id:r.id||("tmp"+Date.now()), athlete, text, image:r.image||"", replyTo:rt, likes:[], createdAt:new Date().toISOString()});
+      say3(""); clearPending(); clearReply();
       ta.value=""; grow(); lastChatKey=""; renderChat(); $("msgs").scrollTop = $("msgs").scrollHeight; markChatSeen();
     }catch(_){ say3("Nepavyko išsiųsti. Bandyk dar kartą.","err"); }
     finally{ $("c-send").disabled = false; busy = false; refresh(); }

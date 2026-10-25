@@ -8,7 +8,7 @@
 const SHEET_NAME = 'Veiklos';
 const ATHLETES = ['Edvinas', 'Tomas', 'Vygantas', 'Justas', 'Paulius', 'Eduardas', 'Dainius'];
 // Veiklų sąrašas tikrinamas programėlėje, todėl keičiant veiklas šio kodo keisti nereikia.
-const HEADERS = ['id', 'athlete', 'sport', 'amount', 'date', 'note', 'createdAt', 'reactions', 'minutes'];
+const HEADERS = ['id', 'athlete', 'sport', 'amount', 'date', 'note', 'createdAt', 'reactions', 'minutes', 'image'];
 const REACTIONS = ['💪', '🤯', '🖕', '👍'];
 // Mažiausia užskaitoma veikla (km arba min.)
 const MINS = { run: 3, walk: 3, bike: 10, swim: 0.3, ibike: 20, gym: 20, padel: 20, basket: 20, hiit: 20, martial: 20, xc: 20, ski: 20, other: 20 };
@@ -36,7 +36,21 @@ function imgSheet_() {
     sh.setFrozenRows(1);
     sh.getRange('A:C').setNumberFormat('@');
   }
+  // Nereikalingi stulpeliai pašalinami – mažiau langelių, greitesnės kopijos
+  if (sh.getMaxColumns() > 3) sh.deleteColumns(4, sh.getMaxColumns() - 3);
   return sh;
+}
+// Nuotrauka išsaugoma dalimis; grąžinamas jos ID
+function storeImage_(image) {
+  const imageId = Utilities.getUuid();
+  const rows = [];
+  for (let i = 0, p = 0; i < image.length; i += IMG_CHUNK, p++) rows.push([imageId, String(p), image.slice(i, i + IMG_CHUNK)]);
+  const ish = imgSheet_();
+  ish.getRange(ish.getLastRow() + 1, 1, rows.length, 3).setValues(rows);
+  return imageId;
+}
+function validImage_(image, max) {
+  return /^data:image\/(jpeg|png|webp);base64,/.test(image) && image.length <= max;
 }
 function readImage_(id) {
   // Pirma skaitomas tik trumpas imageId stulpelis, tada – tik šios nuotraukos eilutės
@@ -56,6 +70,7 @@ function readImage_(id) {
 
 // ===== Naktinė atsarginė kopija =====
 // Kiekvieną naktį visi lapai nukopijuojami į atskirą lentelę „Sporto Lyga atsarginės kopijos“ (saugoma 14 dienų).
+// Nuotraukų lapas kopijuojamas tik sekmadieniais (jis didžiausias).
 // Paleidimas kasdien 03–04 val. nustatytas per Apps Script → Triggers.
 const BACKUP_DAYS = 14;
 function backupNightly() {
@@ -67,7 +82,8 @@ function backupNightly() {
   if (bid) { try { bk = SpreadsheetApp.openById(bid); } catch (e) { bk = null; } }
   if (!bk) { bk = SpreadsheetApp.create('Sporto Lyga atsarginės kopijos'); props.setProperty('backup_id', bk.getId()); }
   const stamp = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd HH-mm');
-  ss.getSheets().forEach(sh => sh.copyTo(bk).setName(stamp + ' ' + sh.getName()));
+  const photos = Utilities.formatDate(new Date(), tz, 'u') === '7' || !bk.getSheets().some(s => s.getName().slice(-IMG_SHEET.length - 1) === ' ' + IMG_SHEET);
+  ss.getSheets().forEach(sh => { if (sh.getName() !== IMG_SHEET || photos) sh.copyTo(bk).setName(stamp + ' ' + sh.getName()); });
   // Seni (ir tušti pradiniai) lapai ištrinami
   const cutoff = Utilities.formatDate(new Date(Date.now() - BACKUP_DAYS * 864e5), tz, 'yyyy-MM-dd');
   bk.getSheets().forEach(s => {
@@ -142,7 +158,8 @@ function doGet(e) {
     note: String(r[5] || ''),
     createdAt: r[6] instanceof Date ? r[6].toISOString() : String(r[6] || ''),
     reactions: parseReactions_(r[7]),
-    minutes: Number(r[8]) || 0
+    minutes: Number(r[8]) || 0,
+    image: String(r[9] || '')
   }));
   const cv = chatSheet_().getDataRange().getValues();
   cv.shift();
@@ -154,7 +171,7 @@ function doGet(e) {
     text: String(r[2] || '').replace(/^'/, ''),
     createdAt: r[3] instanceof Date ? r[3].toISOString() : String(r[3] || '').replace(/^'/, '')
   }));
-  return json_({ ok: true, likesV: 1, reactV: 1, colorsV: 1, imgV: 1, colors: colors_(), entries: entries, messages: messages });
+  return json_({ ok: true, likesV: 1, reactV: 1, colorsV: 1, imgV: 1, actImgV: 1, colors: colors_(), entries: entries, messages: messages });
 }
 
 function doPost(e) {
@@ -179,26 +196,22 @@ function doPost(e) {
       const id = Utilities.getUuid();
       const minutes = Number(body.minutes) || '';
       if (minutes !== '' && (minutes < 1 || minutes > 720)) return json_({ ok: false, error: 'minutes' });
-      // I stulpelis – trukmė minutėmis (nuotolio veikloms)
-      sh.appendRow([id, body.athlete, body.sport, amount, date, String(body.note || '').slice(0, 80), new Date().toISOString(), '', minutes]);
-      return json_({ ok: true, id: id });
+      const image = String(body.image || '');
+      if (image && !validImage_(image, 400000)) return json_({ ok: false, error: 'image' });
+      const imageId = image ? storeImage_(image) : '';
+      // I stulpelis – trukmė minutėmis (nuotolio veikloms), J – veiklos nuotraukos ID
+      sh.appendRow([id, body.athlete, body.sport, amount, date, String(body.note || '').slice(0, 80), new Date().toISOString(), '', minutes, imageId]);
+      return json_({ ok: true, id: id, image: imageId });
     }
 
     if (body.action === 'chat') {
       const text = String(body.text || '').trim().slice(0, 500);
       if (ATHLETES.indexOf(body.athlete) < 0) return json_({ ok: false, error: 'athlete' });
       const image = String(body.image || '');
-      if (image && (!/^data:image\/(jpeg|png|webp);base64,/.test(image) || image.length > 1500000)) return json_({ ok: false, error: 'image' });
+      if (image && !validImage_(image, 1500000)) return json_({ ok: false, error: 'image' });
       if (!text && !image) return json_({ ok: false, error: 'text' });
       const id = Utilities.getUuid();
-      let imageId = '';
-      if (image) {
-        imageId = Utilities.getUuid();
-        const rows = [];
-        for (let i = 0, p = 0; i < image.length; i += IMG_CHUNK, p++) rows.push([imageId, String(p), image.slice(i, i + IMG_CHUNK)]);
-        const ish = imgSheet_();
-        ish.getRange(ish.getLastRow() + 1, 1, rows.length, 3).setValues(rows);
-      }
+      const imageId = image ? storeImage_(image) : '';
       // C ir D stulpeliai suformatuoti kaip tekstas, todėl Sheets jų nepaverčia formule ar data
       chatSheet_().appendRow([id, body.athlete, text, new Date().toISOString(), '', imageId]);
       return json_({ ok: true, id: id, image: imageId });
@@ -265,7 +278,12 @@ function doPost(e) {
     if (body.action === 'delete') {
       const ids = sh.getRange(1, 1, sh.getLastRow(), 1).getValues();
       for (let i = ids.length - 1; i >= 1; i--) {
-        if (String(ids[i][0]) === String(body.id)) { sh.deleteRow(i + 1); break; }
+        if (String(ids[i][0]) === String(body.id)) {
+          const img = sh.getMaxColumns() >= 10 ? String(sh.getRange(i + 1, 10).getValue() || '') : '';
+          sh.deleteRow(i + 1);
+          deleteImage_(img);
+          break;
+        }
       }
       return json_({ ok: true });
     }

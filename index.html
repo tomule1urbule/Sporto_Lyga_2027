@@ -1185,7 +1185,6 @@ function renderChat(){
       const rb = document.createElement("button"); rb.type="button"; rb.className="like"; rb.textContent="↩ Atsakyti";
       rb.setAttribute("aria-label", `Atsakyti ${m.athlete} žinutei`); rb.onclick = ()=>startReply(m); lk.append(rb);
     }
-    if(likers.length){ const w=document.createElement("span"); w.className="likers"; w.textContent = likers.join(", "); lk.append(w); }
     const rm = li.querySelector(".rm");
     if(m.athlete!==ME){ /* svetimų žinučių trinti negalima */ }
     else if(pendingChatDelete===m.id){

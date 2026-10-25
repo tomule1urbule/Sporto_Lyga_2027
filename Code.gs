@@ -39,12 +39,50 @@ function imgSheet_() {
   return sh;
 }
 function readImage_(id) {
+  // Pirma skaitomas tik trumpas imageId stulpelis, tada – tik šios nuotraukos eilutės
   const sh = imgSheet_();
   const last = sh.getLastRow();
   if (last < 2) return '';
-  const rows = sh.getRange(2, 1, last - 1, 3).getValues().filter(r => String(r[0]) === String(id));
+  const ids = sh.getRange(2, 1, last - 1, 1).getValues();
+  let first = -1, end = -1;
+  for (let i = 0; i < ids.length; i++) {
+    if (String(ids[i][0]) === String(id)) { if (first < 0) first = i; end = i; }
+  }
+  if (first < 0) return '';
+  const rows = sh.getRange(first + 2, 1, end - first + 1, 3).getValues().filter(r => String(r[0]) === String(id));
   rows.sort((a, b) => Number(a[1]) - Number(b[1]));
   return rows.map(r => String(r[2])).join('');
+}
+
+// ===== Naktinė atsarginė kopija =====
+// Kiekvieną naktį visi lapai nukopijuojami į naują lentelę aplanke „Sporto Lyga backups“ (saugomos 14 paskutinių).
+const BACKUP_FOLDER = 'Sporto Lyga backups';
+const BACKUP_KEEP = 14;
+function backupNightly() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const tz = ss.getSpreadsheetTimeZone();
+  const stamp = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd HH-mm');
+  const folders = DriveApp.getFoldersByName(BACKUP_FOLDER);
+  const folder = folders.hasNext() ? folders.next() : DriveApp.createFolder(BACKUP_FOLDER);
+  const copy = SpreadsheetApp.create('Sporto Lyga atsarginė kopija ' + stamp);
+  const blank = copy.getSheets()[0];
+  blank.setName('__tuscias__');
+  ss.getSheets().forEach(sh => sh.copyTo(copy).setName(sh.getName()));
+  copy.deleteSheet(blank);
+  const file = DriveApp.getFileById(copy.getId());
+  file.moveTo(folder);
+  // Seniausios kopijos perkeliamos į šiukšliadėžę (iš ten dar galima atkurti 30 dienų)
+  const list = [];
+  const it = folder.getFiles();
+  while (it.hasNext()) { const f = it.next(); if (f.getName().indexOf('Sporto Lyga atsarginė kopija') === 0) list.push(f); }
+  list.sort((x, y) => y.getDateCreated() - x.getDateCreated());
+  list.slice(BACKUP_KEEP).forEach(f => f.setTrashed(true));
+}
+// Paleisti vieną kartą: sukuria kasdienį 03:00 paleidimą
+function setupBackup() {
+  ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === 'backupNightly').forEach(t => ScriptApp.deleteTrigger(t));
+  ScriptApp.newTrigger('backupNightly').timeBased().everyDays(1).atHour(3).create();
+  backupNightly();
 }
 function deleteImage_(id) {
   if (!id) return;

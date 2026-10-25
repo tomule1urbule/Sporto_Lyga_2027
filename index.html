@@ -331,7 +331,7 @@ dialog::backdrop{background:rgba(6,11,16,.55)}
 <header class="band">
   <div class="wrap top">
     <div class="brand">
-      <div class="eyebrow">Žiemos lyga · iki kovo 31 d.</div>
+      <div class="eyebrow" id="eyebrow-top"></div>
       <div class="title">Sporto Lyga <span>2027</span></div>
     </div>
     <div class="whoami" id="whoami" hidden><button type="button" class="mechip" id="logout" title="Keisti vardą ar spalvą"><span class="dot" id="me-dot"></span><span id="me-name"></span></button><button type="button" class="logout install" id="install-btn" hidden>Įdiegti</button></div>
@@ -344,7 +344,7 @@ dialog::backdrop{background:rgba(6,11,16,.55)}
 
 <div class="login" id="login" hidden role="dialog" aria-modal="true" aria-labelledby="login-h">
   <div class="login-in">
-    <div class="eyebrow">Žiemos lyga · 2026 10 22 – 2027 03 31</div>
+    <div class="eyebrow" id="eyebrow-login"></div>
     <h1>Sporto Lyga <span>2027</span></h1>
     <div id="step-name">
       <h2 id="login-h">Kas tu?</h2>
@@ -542,7 +542,7 @@ function tooShort(e){ const m = MINS[e.sport]; return m!=null && e.amount < m - 
    kind "auto"  – taškai skiriami automatiškai pagal tą dieną užregistruotas veiklas.
    kind "claim" – sportininkas pats įveda rezultatą (žingsnius, kalorijas); galima pateikti tą ir kitą dieną.
    rule.type: km (atstumas nurodytose veiklose), minutes (trukmė nurodytose veiklose), sports (skirtingų veiklų sk.), points (veiklos taškai) */
-const BONUSES = [
+const BONUSES_REAL = [
   {id:"b20", date:"2027-01-01", kind:"auto",  pts:5,  title:"Naujametinis startas",  desc:"Pradėk metus aktyviai: bent 45 min. veiklos per dieną (bet kokia veikla).", rule:{type:"dayMinutes", min:45}},
   {id:"b21", date:"2027-01-13", kind:"claim", pts:5,  title:"Laisvės gynėjų žingsniai",       desc:"Sausio 13-ąją surink bent 13 000 žingsnių (pagal laikrodį ar telefoną).", field:"Žingsniai", unitLabel:"žingsnių", min:13000, max:200000},
   {id:"b22", date:"2027-01-22", kind:"claim", confirm:true, pts:5, title:"Alus už Žalgirį", desc:"Žalgiris žaidžia su Virtus – išgerk bent vieną alaus už Žalgirio pergalę.", field:"Alus", button:"Išgėriau alaus 🍺", min:1},
@@ -551,12 +551,29 @@ const BONUSES = [
   {id:"b25", date:"2027-03-11", kind:"auto",  pts:10, title:"Laisvės 90 minučių",            desc:"Bent 90 min. vienos veiklos metu (vienas įrašas, bet kokia veikla).", rule:{type:"singleMinutes", min:90}},
   {id:"b26", date:"2027-03-31", kind:"auto",  pts:10, title:"Foto finišas",          desc:"Paskutinę dieną nuplauk bent 1 km.", rule:{type:"km", sports:["swim"], min:1}},
 ];
+/* Bandomojo sezono bonusai (26.10–30.11) – tie patys tipai kaip tikrojo sezono */
+const BONUSES_TEST = [
+  {id:"t1", date:"2026-10-28", kind:"auto",  pts:5,  title:"Rudens startas",        desc:"Bent 45 min. veiklos per dieną (bet kokia veikla).", rule:{type:"dayMinutes", min:45}},
+  {id:"t2", date:"2026-11-02", kind:"claim", pts:5,  title:"Vėlinių žingsniai",     desc:"Lapkričio 2-ąją surink bent 13 000 žingsnių (pagal laikrodį ar telefoną).", field:"Žingsniai", unitLabel:"žingsnių", min:13000, max:200000},
+  {id:"t3", date:"2026-11-06", kind:"claim", confirm:true, pts:5, title:"Penktadienio bokalas", desc:"Savaitė baigta – išgerk bent vieną alaus už savo komandą.", field:"Alus", button:"Išgėriau alaus 🍺", min:1},
+  {id:"t4", date:"2026-11-11", kind:"auto",  pts:10, title:"Dvigubas lapkritis",    desc:"Atlik bent 2 skirtingas veiklas tą pačią dieną (pvz., bėgimas ir sporto salė; du ėjimai nesiskaito).", rule:{type:"sports", min:2}},
+  {id:"t5", date:"2026-11-16", kind:"claim", pts:10, title:"16K žingsnių",          desc:"Lapkričio 16-ąją surink bent 16 000 žingsnių (pagal laikrodį ar telefoną).", field:"Žingsniai", unitLabel:"žingsnių", min:16000, max:200000},
+  {id:"t6", date:"2026-11-21", kind:"auto",  pts:10, title:"90 minučių iššūkis",    desc:"Bent 90 min. vienos veiklos metu (vienas įrašas, bet kokia veikla).", rule:{type:"singleMinutes", min:90}},
+  {id:"t7", date:"2026-11-30", kind:"auto",  pts:10, title:"Foto finišas",          desc:"Paskutinę dieną nuplauk bent 1 km.", rule:{type:"km", sports:["swim"], min:1}},
+];
+/* ===== SEZONAS =====
+   TEST_SEASON = true – bandomasis sezonas 2026-10-26 – 2026-11-30.
+   Prieš sausio 1 d. pakeisti į false (ir išvalyti bandomuosius duomenis). */
+const TEST_SEASON = true;
+const BONUSES = TEST_SEASON ? BONUSES_TEST : BONUSES_REAL;
 const BONUS = Object.fromEntries(BONUSES.map(b=>[b.id,b]));
 
-const START = "2026-10-22", END = "2027-03-31", NEWYEAR = "2027-01-01";
+const START = TEST_SEASON ? "2026-10-26" : "2027-01-01", END = TEST_SEASON ? "2026-11-30" : "2027-03-31", NEWYEAR = "2027-01-01";
+const LEAGUE = TEST_SEASON ? "Bandomoji lyga" : "Žiemos lyga";
 const MONTHS = ["sausio","vasario","kovo","balandžio","gegužės","birželio","liepos","rugpjūčio","rugsėjo","spalio","lapkričio","gruodžio"];
 const MONTHS_NOM = ["Sausis","Vasaris","Kovas","Balandis","Gegužė","Birželis","Liepa","Rugpjūtis","Rugsėjis","Spalis","Lapkritis","Gruodis"];
 const $ = id => document.getElementById(id);
+const DATA_KEY = "sl27-data-v3", SEEN_KEY = "sl27-chat-seen-v3";
 
 let ME = null;
 let entries = [], feedLimit = 25, pendingDelete = null, busy = false;
@@ -610,7 +627,7 @@ async function refresh(){
   try{
     const data = await apiLoad();
     applyData(data);
-    lsSet("sl27-data", JSON.stringify(data));
+    lsSet(DATA_KEY, JSON.stringify(data));
     const n = entries.filter(e=>e.sport!=="bonus").length;
     if(Date.now() > statusHold) $("status").textContent = n ? `${n} ${plural(n,"veikla","veiklos","veiklų")} · atnaujinama automatiškai` : "Laukiama pirmos veiklos";
     renderAll();
@@ -645,7 +662,7 @@ function claimInfo(e){
   return {b, val:Number(val)};
 }
 function validClaim(e){ const {b,val} = claimInfo(e); return !!(b && b.kind==="claim" && activeBonuses().includes(b) && e.date===b.date && val >= b.min); }
-function sportEntries(){ return entries.filter(e=>e.sport!=="bonus" && !tooShort(e)); }
+function sportEntries(){ return entries.filter(e=>e.sport!=="bonus" && !tooShort(e) && e.date >= START && e.date <= END); }
 function autoBonusAwards(){
   const out = [];
   for(const b of activeBonuses().filter(b=>b.kind==="auto")){
@@ -1003,6 +1020,8 @@ async function onSubmit(ev){
   }
   if(!date) return say("Pasirink datą.","err");
   if(date > t) return say("Negalima registruoti veiklos ateityje.","err");
+  if(date < START) return say(`Lyga prasideda ${prettyDate(START)} – ankstesnės veiklos neužskaitomos.`,"err");
+  if(date > END) return say("Lyga jau baigėsi.","err");
   if(!API_URL) return say("Lyga dar neprijungta prie duomenų bazės.","err");
   confirmSig = null; $("f-submit").textContent = submitLabel();
   $("f-submit").disabled = true; busy = true; say("Saugoma…");
@@ -1366,7 +1385,7 @@ async function removeChat(id){
 }
 
 /* ---------- Prisijungimas (be slaptažodžio): vardas → spalva ---------- */
-const ME_KEY = "sl27-user-v2";   // naujas raktas: visi turi prisijungti iš naujo
+const ME_KEY = "sl27-user-v3";   // naujas raktas: visi turi prisijungti iš naujo (vardas + spalva)
 let pickName = null;
 function showLogin(){ pickName = null; $("login").hidden = false; document.body.style.overflow="hidden"; renderLoginStep(); }
 function renderLoginStep(){
@@ -1584,10 +1603,10 @@ function showTab(name){
   if(name==="log") updatePreview();
 }
 function latestOtherMsg(){ return messages.filter(m=>m.athlete!==ME && active().includes(m.athlete)).reduce((mx,m)=>String(m.createdAt)>mx?String(m.createdAt):mx, ""); }
-function markChatSeen(){ const l = messages.reduce((mx,m)=>String(m.createdAt)>mx?String(m.createdAt):mx, ""); if(l) lsSet("sl27-chat-seen", l); updateChatDot(); }
+function markChatSeen(){ const l = messages.reduce((mx,m)=>String(m.createdAt)>mx?String(m.createdAt):mx, ""); if(l) lsSet(SEEN_KEY, l); updateChatDot(); }
 function updateChatDot(){
-  if(currentTab==="chat" && document.visibilityState==="visible"){ const l = messages.reduce((mx,m)=>String(m.createdAt)>mx?String(m.createdAt):mx, ""); if(l && l > (lsGet("sl27-chat-seen")||"")) lsSet("sl27-chat-seen", l); }
-  const seen = lsGet("sl27-chat-seen") || "";
+  if(currentTab==="chat" && document.visibilityState==="visible"){ const l = messages.reduce((mx,m)=>String(m.createdAt)>mx?String(m.createdAt):mx, ""); if(l && l > (lsGet(SEEN_KEY)||"")) lsSet(SEEN_KEY, l); }
+  const seen = lsGet(SEEN_KEY) || "";
   $("chat-dot").hidden = !(latestOtherMsg() > seen);
 }
 function setupTabs(){
@@ -1619,7 +1638,9 @@ function setupInstall(){
 }
 
 /* ---------- Paleidimas ---------- */
-try{ const c = JSON.parse(lsGet("sl27-data")||"null"); if(c && c.ok) applyData(c); }catch(_){}
+{ const ed = END.split("-"); $("eyebrow-top").textContent = `${LEAGUE} · iki ${MONTHS[+ed[1]-1]} ${+ed[2]} d.`;
+  $("eyebrow-login").textContent = `${LEAGUE} · ${START.replace(/-/g," ")} – ${END.replace(/-/g," ")}`; }
+try{ const c = JSON.parse(lsGet(DATA_KEY)||"null"); if(c && c.ok) applyData(c); }catch(_){}
 renderRules(); setupForm(); setupActPhoto(); setupChat(); setupLogin(); setupInstall(); setupTabs();
 (()=>{ const d=$("rules-dlg");
   $("info-btn").addEventListener("click",()=>{ if(d.showModal) d.showModal(); else d.setAttribute("open",""); });

@@ -20,7 +20,7 @@ function parseReactions_(v) {
   return out;
 }
 // Žaidėjų spalvos saugomos skripto nustatymuose (p0–p17)
-const COLORS_KEY = 'colors_v2';
+const COLORS_KEY = 'colors_v3'; // nauja reikšmė = visi renkasi spalvas iš naujo
 function colors_() { try { return JSON.parse(PropertiesService.getScriptProperties().getProperty(COLORS_KEY) || '{}'); } catch (e) { return {}; } }
 const CHAT_SHEET = 'Pokalbiai';
 const CHAT_HEADERS = ['id', 'athlete', 'text', 'createdAt', 'likes', 'image', 'replyTo'];

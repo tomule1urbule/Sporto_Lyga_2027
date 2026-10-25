@@ -522,11 +522,11 @@ const SPORTS = [
   {id:"martial", name:"Kovos menai",                unit:"min", per:60, pts:8},
   {id:"xc",     name:"Lygumų slidinėjimas",         unit:"min", per:60, pts:8},
   {id:"ski",    name:"Kalnų slidinėjimas / snieglentė", unit:"min", per:60, pts:3},
-  {id:"other",  name:"Kita aktyvi veikla",          unit:"min", per:60, pts:2},
+  {id:"hunt",   name:"Medžioklė / žvejyba",         unit:"min", per:60, pts:1.5},
 ];
 const SPORT = Object.fromEntries(SPORTS.map(s=>[s.id,s]));
 /* Mažiausia veikla, kuri užskaitoma (km arba min.) */
-const MINS = {run:3, walk:3, bike:10, swim:0.3, ibike:20, gym:20, padel:20, basket:20, hiit:20, martial:20, xc:20, ski:20, other:20};
+const MINS = {run:3, walk:3, bike:10, swim:0.3, ibike:20, gym:20, padel:20, basket:20, hiit:20, martial:20, xc:20, ski:20, hunt:45};
 function minText(id){ const m = MINS[id]; if(m==null) return ""; return id==="swim" ? `${Math.round(m*1000)} m` : SPORT[id].unit==="km" ? `${fmt(m)} km` : `${m} min.`; }
 function durText(m){ m = Math.round(m); return m >= 60 ? `${Math.floor(m/60)} val. ${String(m%60).padStart(2,"0")} min.` : `${m} min.`; }
 function paceText(e){
@@ -899,7 +899,7 @@ function niceStep(raw){ const p = Math.pow(10, Math.floor(Math.log10(raw||1))); 
 /* ---------- Taisyklės ---------- */
 function renderRules(){
   let h = "<thead><tr><th>Veikla</th><th>Už</th><th>Mažiausiai</th><th style='text-align:right'>Taškai</th></tr></thead><tbody>";
-  for(const s of SPORTS) h += `<tr><td>${s.name}</td><td>${s.unit==="km" ? s.per+" km" : "1 val."}</td><td>${minText(s.id)}</td><td class="n">${s.pts}</td></tr>`;
+  for(const s of SPORTS) h += `<tr><td>${s.name}</td><td>${s.unit==="km" ? s.per+" km" : "1 val."}</td><td>${minText(s.id)}</td><td class="n">${fmt(s.pts)}</td></tr>`;
   $("rules").innerHTML = h + "</tbody>";
   const ul = $("bonus-list"); ul.innerHTML = "";
   for(const b of BONUSES){
@@ -931,7 +931,7 @@ function setupForm(){
 }
 let confirmSig = null;
 /* Įprastos ribos vienai veiklai: viršijus – paprašoma patvirtinti */
-const LIMITS = {run:45, walk:40, bike:200, ibike:180, swim:6, gym:180, padel:240, basket:180, hiit:150, martial:180, xc:300, ski:360, other:240};
+const LIMITS = {run:45, walk:40, bike:200, ibike:180, swim:6, gym:180, padel:240, basket:180, hiit:150, martial:180, xc:300, ski:360, hunt:600};
 /* Tikrinimas rašant: ar skaičius atrodo tikėtinas (pvz., 1,5 vietoj 90 min., metrai vietoj km) */
 function checkAmount(sport, amount){
   const s = SPORT[sport]; if(!s || !(amount>0)) return null;
@@ -972,9 +972,6 @@ function updateWarn(){
 function updatePreview(){
   if(confirmSig){ confirmSig = null; $("f-submit").textContent = submitLabel(); say(""); }
   updateWarn();
-  const needNote = $("f-sport").value === "other";
-  $("f-note-l").textContent = needNote ? "Pastaba (privaloma) – kokia veikla?" : "Pastaba (neprivaloma)";
-  $("f-note").required = needNote;
   const s = SPORT[$("f-sport").value];
   $("f-unit").textContent = s.unit==="km" ? "Atstumas (km)" : "Trukmė (min.)";
   $("f-min-l").hidden = s.unit!=="km";
@@ -1004,7 +1001,6 @@ async function onSubmit(ev){
     $("f-submit").textContent = "Taip, viskas teisinga";
     return say(`Ar tikrai ${amountText(sport, amount)}${km ? ` per ${mins} min.` : ""} (${SPORT[sport].name.toLowerCase()})? Jei teisingai – spausk dar kartą.`, "err");
   }
-  if(sport==="other" && note.length < 3){ $("f-note").focus(); return say("Parašyk pastaboje, kokia tai buvo veikla.","err"); }
   if(!date) return say("Pasirink datą.","err");
   if(date > t) return say("Negalima registruoti veiklos ateityje.","err");
   if(!API_URL) return say("Lyga dar neprijungta prie duomenų bazės.","err");

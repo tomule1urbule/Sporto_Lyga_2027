@@ -215,7 +215,7 @@ button{font:inherit;cursor:pointer;border-radius:4px}
 .imgbtn{display:inline-flex;align-items:center;gap:6px;margin-top:5px;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:3px 11px;font-size:13px;color:var(--ink)}
 .imgbtn:disabled{opacity:.6}
 .photo-row{grid-column:1 / -1;display:flex;flex-direction:column;gap:8px}
-.attach.wide{width:auto;justify-content:start;display:flex;align-items:center;gap:8px;padding:9px 12px;font-size:14px;color:var(--ink)}
+.attach.wide{width:auto;justify-content:start;display:flex;flex-direction:row;align-items:center;gap:8px;padding:9px 12px;font-family:inherit;font-size:14px;letter-spacing:normal;text-transform:none;color:var(--ink)}
 .attach.wide span{color:var(--muted)}
 .viewer{border:0;padding:0;background:transparent;max-width:100vw;max-height:100vh;width:100vw;height:100vh;box-shadow:none}
 .viewer::backdrop{background:rgba(0,0,0,.88)}
@@ -543,20 +543,20 @@ function tooShort(e){ const m = MINS[e.sport]; return m!=null && e.amount < m - 
    rule.type: km (atstumas nurodytose veiklose), minutes (trukmė nurodytose veiklose), sports (skirtingų veiklų sk.), points (veiklos taškai) */
 const BONUSES_REAL = [
   {id:"b20", date:"2027-01-01", kind:"auto",  pts:5,  title:"Naujametinis startas",  desc:"Pradėk metus aktyviai: bent 45 min. veiklos per dieną (bet kokia veikla).", rule:{type:"dayMinutes", min:45}},
-  {id:"b21", date:"2027-01-13", kind:"claim", pts:5,  title:"Laisvės gynėjų žingsniai",       desc:"Sausio 13-ąją surink bent 13 000 žingsnių (pagal laikrodį ar telefoną).", field:"Žingsniai", unitLabel:"žingsnių", min:13000, max:200000},
-  {id:"b22", date:"2027-01-22", kind:"claim", confirm:true, pts:5, title:"Alus už Žalgirį", desc:"Žalgiris žaidžia su Virtus – išgerk bent vieną alaus už Žalgirio pergalę.", field:"Alus", button:"Išgėriau alaus 🍺", min:1},
+  {id:"b21", date:"2027-01-13", kind:"claim", pts:5,  title:"Laisvės gynėjų žingsniai",       desc:"Sausio 13-ąją surink bent 13 000 žingsnių (pagal laikrodį ar telefoną).", field:"Žingsniai", unitLabel:"žingsnių", photo:"Pridėk žingsnių ekrano nuotrauką (iš laikrodžio ar telefono).", min:13000, max:200000},
+  {id:"b22", date:"2027-01-22", kind:"claim", confirm:true, pts:5, title:"Alus už Žalgirį", desc:"Žalgiris žaidžia su Virtus – išgerk bent vieną alaus už Žalgirio pergalę.", field:"Alus", button:"Išgėriau alaus 🍺", photo:"Pridėk nuotrauką su alumi 🍺", min:1},
   {id:"b23", date:"2027-02-14", kind:"auto",  pts:10, title:"Dvigubas Valentinas",   desc:"Atlik bent 2 skirtingas veiklas tą pačią dieną (pvz., bėgimas ir sporto salė; du ėjimai nesiskaito).", rule:{type:"sports", min:2}},
-  {id:"b24", date:"2027-02-16", kind:"claim", pts:10, title:"16K žingsnių Lietuvai",       desc:"Vasario 16-ąją surink bent 16 000 žingsnių (pagal laikrodį ar telefoną).", field:"Žingsniai", unitLabel:"žingsnių", min:16000, max:200000},
+  {id:"b24", date:"2027-02-16", kind:"claim", pts:10, title:"16K žingsnių Lietuvai",       desc:"Vasario 16-ąją surink bent 16 000 žingsnių (pagal laikrodį ar telefoną).", field:"Žingsniai", unitLabel:"žingsnių", photo:"Pridėk žingsnių ekrano nuotrauką (iš laikrodžio ar telefono).", min:16000, max:200000},
   {id:"b25", date:"2027-03-11", kind:"auto",  pts:10, title:"Laisvės 90 minučių",            desc:"Bent 90 min. vienos veiklos metu (vienas įrašas, bet kokia veikla).", rule:{type:"singleMinutes", min:90}},
   {id:"b26", date:"2027-03-31", kind:"auto",  pts:10, title:"Foto finišas",          desc:"Paskutinę dieną nuplauk bent 1 km.", rule:{type:"km", sports:["swim"], min:1}},
 ];
 /* Bandomojo sezono bonusai (26.10–30.11) – tie patys tipai kaip tikrojo sezono */
 const BONUSES_TEST = [
   {id:"t1", date:"2026-10-28", kind:"auto",  pts:5,  title:"Rudens startas",        desc:"Bent 45 min. veiklos per dieną (bet kokia veikla).", rule:{type:"dayMinutes", min:45}},
-  {id:"t2", date:"2026-11-02", kind:"claim", pts:5,  title:"Vėlinių žingsniai",     desc:"Lapkričio 2-ąją surink bent 13 000 žingsnių (pagal laikrodį ar telefoną).", field:"Žingsniai", unitLabel:"žingsnių", min:13000, max:200000},
-  {id:"t3", date:"2026-11-06", kind:"claim", confirm:true, pts:5, title:"Penktadienio bokalas", desc:"Savaitė baigta – išgerk bent vieną alaus už savo komandą.", field:"Alus", button:"Išgėriau alaus 🍺", min:1},
+  {id:"t2", date:"2026-11-02", kind:"claim", pts:5,  title:"Vėlinių žingsniai",     desc:"Lapkričio 2-ąją surink bent 13 000 žingsnių (pagal laikrodį ar telefoną).", field:"Žingsniai", unitLabel:"žingsnių", photo:"Pridėk žingsnių ekrano nuotrauką (iš laikrodžio ar telefono).", min:13000, max:200000},
+  {id:"t3", date:"2026-11-06", kind:"claim", confirm:true, pts:5, title:"Penktadienio bokalas", desc:"Savaitė baigta – išgerk bent vieną alaus už savo komandą.", field:"Alus", button:"Išgėriau alaus 🍺", photo:"Pridėk nuotrauką su alumi 🍺", min:1},
   {id:"t4", date:"2026-11-11", kind:"auto",  pts:10, title:"Dvigubas lapkritis",    desc:"Atlik bent 2 skirtingas veiklas tą pačią dieną (pvz., bėgimas ir sporto salė; du ėjimai nesiskaito).", rule:{type:"sports", min:2}},
-  {id:"t5", date:"2026-11-16", kind:"claim", pts:10, title:"16K žingsnių",          desc:"Lapkričio 16-ąją surink bent 16 000 žingsnių (pagal laikrodį ar telefoną).", field:"Žingsniai", unitLabel:"žingsnių", min:16000, max:200000},
+  {id:"t5", date:"2026-11-16", kind:"claim", pts:10, title:"16K žingsnių",          desc:"Lapkričio 16-ąją surink bent 16 000 žingsnių (pagal laikrodį ar telefoną).", field:"Žingsniai", unitLabel:"žingsnių", photo:"Pridėk žingsnių ekrano nuotrauką (iš laikrodžio ar telefono).", min:16000, max:200000},
   {id:"t6", date:"2026-11-21", kind:"auto",  pts:10, title:"90 minučių iššūkis",    desc:"Bent 90 min. vienos veiklos metu (vienas įrašas, bet kokia veikla).", rule:{type:"singleMinutes", min:90}},
   {id:"t7", date:"2026-11-30", kind:"auto",  pts:10, title:"Foto finišas",          desc:"Paskutinę dieną nuplauk bent 1 km.", rule:{type:"km", sports:["swim"], min:1}},
 ];
@@ -587,6 +587,8 @@ function pointsOf(sport, amount){ const s = SPORT[sport]; if(!s || !(amount>0)) 
 function fmt(n){ const r = Math.round(n*10)/10; return (Number.isInteger(r) ? String(r) : r.toFixed(1)).replace(".", ","); }
 /* "1 taškas", "5 taškai", "10 taškų", "3,8 taško" */
 function tsk(n){ const r = Math.round(n*10)/10; const w = !Number.isInteger(r) ? "taško" : plural(Math.abs(r),"taškas","taškai","taškų"); return fmt(r)+" "+w; }
+/* Galininkas: "gauti 1 tašką / 5 taškus / 10 taškų / 2,5 taško" */
+function tskAcc(n){ const r = Math.round(n*10)/10; const w = !Number.isInteger(r) ? "taško" : plural(Math.abs(r),"tašką","taškus","taškų"); return fmt(r)+" "+w; }
 function fmtInt(n){ return Math.round(n).toLocaleString("lt-LT"); }
 function ymd(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 const DAYS = Math.round((Date.parse(END+"T12:00:00Z") - Date.parse(START+"T12:00:00Z"))/864e5) + 1;
@@ -753,12 +755,13 @@ function renderBonusCard(all){
   const today = bs.find(b=>b.date===t);
   const lateClaim = !today && bs.find(b=>b.date===y && b.kind==="claim");
   const b = today || lateClaim;
+  if(bonusImage && (!b || bonusImage.bid!==b.id)) bonusImage = null;
   if(!b){ sec.hidden = true; return; }
   // Jau gavęs šį bonusą žaidėjas kortelės nebemato
   if(ME && all.some(i=>i.kind==="bonus" && i.athlete===ME && i.b.id===b.id)){ sec.hidden = true; sec.innerHTML = ""; sec.dataset.bid = ""; return; }
   const live = !!(today || lateClaim);
   const typing = $("b-val") && (sec.contains(document.activeElement) || $("b-val").value);
-  if(typing && sec.dataset.bid===b.id) return;
+  if((typing || (bonusImage && bonusImage.bid===b.id)) && sec.dataset.bid===b.id) return;
   sec.dataset.bid = b.id;
   const got = ATHLETES.filter(a=>all.some(i=>i.kind==="bonus" && i.athlete===a && i.b.id===b.id));
   const card = document.createElement("div");
@@ -779,10 +782,25 @@ function renderBonusCard(all){
       card.append(w);
       const f = document.createElement("form"); f.noValidate = true;
       f.innerHTML = `<div class="posting-as">Pateikia: <b>${ME||"–"}</b></div><label class="full"><span></span><input id="b-val" type="number" inputmode="numeric" min="0" step="1"></label>
-        <button class="primary" type="submit">Gauti +${tsk(b.pts)}</button><p class="msg" id="b-msg" role="status"></p>`;
+        <div class="photo-row"><span class="hint" style="margin:0" id="b-photo-h"></span>
+          <label class="attach wide" id="b-attach"><input id="b-file" type="file" accept="image/*" hidden>📷 Pridėti nuotrauką <span>(privaloma)</span></label>
+          <div class="pending-img" id="b-pending" hidden><img id="b-thumb" alt=""><span>Nuotrauka paruošta</span><button type="button" class="link" id="b-unattach">Pašalinti</button></div></div>
+        <button class="primary" type="submit">Gauti +${tskAcc(b.pts)}</button><p class="msg" id="b-msg" role="status"></p>`;
       f.querySelector("label span").textContent = b.field;
       f.querySelector("#b-val").placeholder = String(b.min);
-      if(b.confirm){ f.querySelector("label").remove(); f.querySelector("button").textContent = `${b.button} · +${tsk(b.pts)}`; }
+      if(b.confirm){ f.querySelector("label.full").remove(); f.querySelector("button.primary").textContent = `${b.button} · +${tsk(b.pts)}`; }
+      f.querySelector("#b-photo-h").textContent = b.photo || "Pridėk nuotrauką kaip įrodymą.";
+      const showB = ()=>{ const has = bonusImage && bonusImage.bid===b.id; f.querySelector("#b-pending").hidden = !has; f.querySelector("#b-attach").hidden = !!has; if(has) f.querySelector("#b-thumb").src = bonusImage.data; };
+      f.querySelector("#b-file").addEventListener("change", async ev=>{
+        const file = ev.target.files[0]; if(!file) return;
+        const m = f.querySelector("#b-msg");
+        m.textContent = "Ruošiama nuotrauka…"; m.className = "msg";
+        try{ bonusImage = {bid:b.id, data: await compressImage(file, 1024, 160000)}; m.textContent = ""; }
+        catch(_){ bonusImage = null; m.textContent = "Šios nuotraukos nepavyko atidaryti. Pabandyk kitą (JPG arba PNG)."; m.className = "msg err"; }
+        ev.target.value = ""; showB();
+      });
+      f.querySelector("#b-unattach").addEventListener("click", ()=>{ bonusImage = null; showB(); });
+      showB();
       f.addEventListener("submit", ev=>claimBonus(ev, b));
       if(!lateClaim) card.append(f);
       else { const n = document.createElement("p"); n.className="who-got"; n.textContent = "Rezultatą dar gali pateikti iki šios dienos pabaigos."; card.append(n, f); }
@@ -790,6 +808,7 @@ function renderBonusCard(all){
   }
   sec.replaceChildren(card); sec.hidden = false;
 }
+let bonusImage = null; // {bid, data} – bonuso įrodymo nuotrauka
 async function claimBonus(ev, b){
   ev.preventDefault();
   const athlete = ME, val = b.confirm ? 1 : parseInt($("b-val").value,10);
@@ -798,11 +817,15 @@ async function claimBonus(ev, b){
   if(hasBonus(athlete,b)) return say2(`${athlete} šį bonusą jau gavo.`,"err");
   if(!(val >= b.min)) return say2(`Reikia bent ${fmtInt(b.min)} ${b.unitLabel||""}. Bonusas neskiriamas.`,"err");
   if(val > (b.max||200000)) return say2("Skaičius per didelis. Pasitikrink.","err");
-  const btn = ev.target.querySelector("button"); btn.disabled = true; busy = true; say2("Saugoma…");
+  const img = bonusImage && bonusImage.bid===b.id ? bonusImage.data : null;
+  if(!img) return say2("Pridėk nuotrauką – be jos bonusas neužskaitomas.","err");
+  const btn = ev.target.querySelector("button.primary"); btn.disabled = true; busy = true; say2("Saugoma su nuotrauka…");
   try{
-    await apiPost({action:"add", athlete, sport:"bonus", amount:1, date:b.date, note:`${b.id}:${val}`});
+    const r = await apiPost({action:"add", athlete, sport:"bonus", amount:1, date:b.date, note:`${b.id}:${val}`, image:img});
+    if(r && r.image) IMG_CACHE[r.image] = img;
+    bonusImage = null;
     say2(`Užskaityta: +${tsk(b.pts)} (${athlete})`,"ok");
-  }catch(_){ say2("Nepavyko išsaugoti. Bandyk dar kartą.","err"); btn.disabled = false; }
+  }catch(e){ say2(String(e && e.message)==="photo" ? "Pridėk nuotrauką – be jos bonusas neužskaitomas." : "Nepavyko išsaugoti. Bandyk dar kartą.","err"); btn.disabled = false; }
   finally{ busy = false; refresh(); }
 }
 
@@ -1063,6 +1086,11 @@ function renderFeed(all){
     if(it.kind==="bonus"){
       li.querySelector(".t").textContent = `${it.athlete} · ★ ${it.b.title}`;
       li.querySelector(".m").textContent = `${prettyDate(it.date)} · bonusas` + (it.e ? (it.b.confirm ? " · 🍺" : ` · ${it.b.field.toLowerCase()}: ${fmtInt(claimInfo(it.e).val)}`) : " · automatiškai");
+      if(it.e && it.e.image){
+        const ib = document.createElement("button"); ib.type="button"; ib.className="imgbtn"; ib.textContent="📷 Nuotrauka";
+        ib.onclick = ()=>openImage(it.e, ib, `${it.athlete} · ★ ${it.b.title}`);
+        li.querySelector(".note").append(ib);
+      }
     } else {
       const e = it.e, s = SPORT[e.sport];
       li.querySelector(".t").textContent = `${e.athlete} · ${s.name}`;

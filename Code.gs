@@ -207,6 +207,8 @@ function doPost(e) {
       const id = Utilities.getUuid();
       const image = String(body.image || '');
       if (image && !validImage_(image, 400000)) return json_({ ok: false, error: 'image' });
+      // Rankiniam bonusui (žingsniai, alus) nuotrauka privaloma
+      if (body.sport === 'bonus' && !image) return json_({ ok: false, error: 'photo' });
       const imageId = image ? storeImage_(image) : '';
       // I stulpelis – trukmė minutėmis (nuotolio veikloms), J – veiklos nuotraukos ID
       sh.appendRow([id, body.athlete, body.sport, amount, date, c.note, new Date().toISOString(), '', minutes, imageId]);

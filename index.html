@@ -265,7 +265,6 @@ dialog::backdrop{background:rgba(6,11,16,.55)}
 .st-top .rk{font-size:13px;color:var(--muted)}
 .tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
 .tile{grid-column:span 2}
-.tile:nth-child(-n+2){grid-column:span 3}
 .tile{background:var(--bg);border-radius:8px;padding:10px;min-width:0}
 .tile b{display:block;font-family:var(--f-display);font-weight:800;font-size:24px;line-height:1.05;font-variant-numeric:tabular-nums}
 .tile span{font-size:11.5px;color:var(--muted)}
@@ -1544,8 +1543,10 @@ function renderStats(name){
   tile(st.current ? `🔥 ${st.current}` : "0", plural(st.current,"diena iš eilės","dienos iš eilės","dienų iš eilės"));
   tile(st.days, plural(st.days,"aktyvi diena","aktyvios dienos","aktyvių dienų") + " iš viso");
   tile(sp.length, plural(sp.length,"veikla","veiklos","veiklų"));
+  const mins = Math.round(sp.reduce((s,i)=>s+durOf(i.e),0));
+  tile(mins < 60 ? `${mins} min.` : `${fmt(mins/60)} val.`, "aktyvaus laiko");
   tile(wins ? `👑 ${wins}` : "0", plural(wins,"kartą savaitės lyderis","kartus savaitės lyderis","kartų savaitės lyderis"));
-  tile(fmt(bonusPts), "taškų iš bonusų");
+  tile(fmt(bonusPts), tsk(bonusPts).split(" ").slice(1).join(" ") + " iš bonusų");
   body.append(tiles);
   // Savaitės
   const h1 = document.createElement("div"); h1.className = "st-h"; h1.textContent = "Taškai pagal savaites"; body.append(h1);
@@ -1638,7 +1639,7 @@ function setupInstall(){
 }
 
 /* ---------- Paleidimas ---------- */
-{ const ed = END.split("-"); $("eyebrow-top").textContent = `${LEAGUE} · iki ${MONTHS[+ed[1]-1]} ${+ed[2]} d.`;
+{ const ed = END.split("-"); $("eyebrow-top").textContent = `${TEST_SEASON ? "Bandomoji" : LEAGUE} · iki ${MONTHS[+ed[1]-1]} ${+ed[2]} d.`;
   $("eyebrow-login").textContent = `${LEAGUE} · ${START.replace(/-/g," ")} – ${END.replace(/-/g," ")}`; }
 try{ const c = JSON.parse(lsGet(DATA_KEY)||"null"); if(c && c.ok) applyData(c); }catch(_){}
 renderRules(); setupForm(); setupActPhoto(); setupChat(); setupLogin(); setupInstall(); setupTabs();

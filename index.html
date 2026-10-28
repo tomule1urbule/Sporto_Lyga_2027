@@ -1066,7 +1066,7 @@ async function onSubmit(ev){
     }
   }catch(e){
     const er = String(e && e.message);
-    say(er==="too_short" ? `Per trumpa veikla. Užskaitoma nuo ${minText(sport)}` : er==="not_found" ? "Šios veiklos nebėra – gal ji ištrinta." : "Nepavyko išsaugoti. Patikrink ryšį ir bandyk dar kartą.","err");
+    say(er==="too_short" ? `Per trumpa veikla. Užskaitoma nuo ${minText(sport)}` : er==="not_found" ? "Šios veiklos nebėra – gal ji ištrinta." : er==="busy" ? "Serveris šiuo metu užimtas. Pabandyk po minutės." : "Nepavyko išsaugoti. Patikrink ryšį ir bandyk dar kartą.","err");
   }finally{ $("f-submit").disabled = false; busy = false; refresh(); }
 }
 

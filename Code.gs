@@ -196,7 +196,8 @@ function doPost(e) {
   try { body = JSON.parse(e.postData.contents); } catch (err) { return json_({ ok: false, error: 'bad_json' }); }
 
   const lock = LockService.getScriptLock();
-  lock.waitLock(10000);
+  // Jei kita užklausa užstrigo – grąžinama aiški klaida, o ne tuščias atsakymas
+  if (!lock.tryLock(20000)) return json_({ ok: false, error: 'busy' });
   try {
     const sh = sheet_();
 

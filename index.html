@@ -481,7 +481,7 @@ dialog::backdrop{background:rgba(6,11,16,.55)}
 
 <dialog id="rules-dlg" aria-labelledby="h-rules">
   <div class="dlg-head"><h2 id="h-rules">Kaip skaičiuojami taškai</h2><button class="close" id="rules-close" type="button" aria-label="Uždaryti">×</button></div>
-  <p class="sub">Taškai skiriami proporcingai: pvz., 45 min. sporto salėje = 3,75 taško, 7,5 km bėgimo = 7,5 taško. Trumpesnės už mažiausią ribą veiklos neužskaitomos.</p>
+  <p class="sub">Taškai skiriami proporcingai: pvz., 45 min. sporto salėje = 3,75 taško, 7,5 km bėgimo = 7,5 taško. Trumpesnės už mažiausią ribą veiklos neužskaitomos. Veiklą reikia užregistruoti per 2 dienas: pvz., penktadienio veiklą – iki sekmadienio pabaigos.</p>
   <div style="overflow-x:auto"><table id="rules"></table></div>
   <h3 class="dlg-sec">Bonusų dienos</h3>
   <p class="sub" style="margin-top:4px">Kiekvieną bonuso dieną galima gauti papildomų taškų. Kiekvienas sportininkas tą patį bonusą gali gauti tik kartą.</p>
@@ -511,7 +511,7 @@ function col(name){ return `var(--p${colorIdx(name)})`; }
 const SPORTS = [
   {id:"run",    name:"Bėgimas",                     unit:"km",  per:1,  pts:1},
   {id:"walk",   name:"Ėjimas",                      unit:"km",  per:1,  pts:1},
-  {id:"bike",   name:"Dviratis",                    unit:"km",  per:5,  pts:1},
+  {id:"bike",   name:"Dviratis",                    unit:"km",  per:3,  pts:1},
   {id:"ibike",  name:"Dviratis (treniruoklis)",     unit:"min", per:60, pts:5},
   {id:"swim",   name:"Plaukimas",                   unit:"km",  per:1,  pts:5},
   {id:"gym",    name:"Sporto salė",                 unit:"min", per:60, pts:5},
@@ -574,6 +574,9 @@ const MONTHS = ["sausio","vasario","kovo","balandžio","gegužės","birželio","
 const MONTHS_NOM = ["Sausis","Vasaris","Kovas","Balandis","Gegužė","Birželis","Liepa","Rugpjūtis","Rugsėjis","Spalis","Lapkritis","Gruodis"];
 const $ = id => document.getElementById(id);
 const DATA_KEY = "sl27-data-v3", SEEN_KEY = "sl27-chat-seen-v3";
+/* Veiklą galima registruoti tik per LATE_DAYS dienas po jos (pvz., penktadienio – iki sekmadienio) */
+const LATE_DAYS = 2;
+function earliestDate(){ const e = addDays(todayStr(), -LATE_DAYS); return e > START ? e : START; }
 
 let ME = null;
 let entries = [], feedLimit = 25, pendingDelete = null, busy = false;
@@ -958,7 +961,7 @@ function setupForm(){
   const fs = $("f-sport"), ff = $("feed-filter");
   fs.innerHTML = SPORTS.map(s=>`<option value="${s.id}">${s.name}</option>`).join("");
   const t = todayStr();
-  $("f-date").value = t; $("f-date").max = t;
+  $("f-date").value = t; $("f-date").max = t; $("f-date").min = earliestDate();
   fs.addEventListener("change",()=>{ $("f-amount").value=""; $("f-min").value=""; updatePreview(); });
   $("f-amount").addEventListener("input",updatePreview);
   $("f-min").addEventListener("input",updatePreview);
@@ -1044,6 +1047,7 @@ async function onSubmit(ev){
   if(!date) return say("Pasirink datą.","err");
   if(date > t) return say("Negalima registruoti veiklos ateityje.","err");
   if(date < START) return say(`Lyga prasideda ${prettyDate(START)} – ankstesnės veiklos neužskaitomos.`,"err");
+  if(date < addDays(t, -LATE_DAYS)) return say(`Per vėlu: veiklą galima užregistruoti tik per ${LATE_DAYS} dienas (anksčiausia data – ${prettyDate(addDays(t, -LATE_DAYS))}).`,"err");
   if(date > END) return say("Lyga jau baigėsi.","err");
   if(!API_URL) return say("Lyga dar neprijungta prie duomenų bazės.","err");
   confirmSig = null; $("f-submit").textContent = submitLabel();
@@ -1066,7 +1070,7 @@ async function onSubmit(ev){
     }
   }catch(e){
     const er = String(e && e.message);
-    say(er==="too_short" ? `Per trumpa veikla. Užskaitoma nuo ${minText(sport)}` : er==="not_found" ? "Šios veiklos nebėra – gal ji ištrinta." : er==="busy" ? "Serveris šiuo metu užimtas. Pabandyk po minutės." : "Nepavyko išsaugoti. Patikrink ryšį ir bandyk dar kartą.","err");
+    say(er==="too_short" ? `Per trumpa veikla. Užskaitoma nuo ${minText(sport)}` : er==="not_found" ? "Šios veiklos nebėra – gal ji ištrinta." : er==="busy" ? "Serveris šiuo metu užimtas. Pabandyk po minutės." : er==="late" ? `Per vėlu: veiklą galima užregistruoti tik per ${LATE_DAYS} dienas.` : "Nepavyko išsaugoti. Patikrink ryšį ir bandyk dar kartą.","err");
   }finally{ $("f-submit").disabled = false; busy = false; refresh(); }
 }
 
@@ -1137,7 +1141,7 @@ function renderFeed(all){
         const n=document.createElement("button"); n.className="link"; n.textContent="Palikti"; n.onclick=()=>{pendingDelete=null; renderFeed(items());};
         acts.append(y,n);
       } else {
-        if(editSupported && it.kind!=="bonus"){
+        if(editSupported && it.kind!=="bonus" && it.e.date >= addDays(todayStr(), -LATE_DAYS)){
           const ed=document.createElement("button"); ed.className="link"; ed.textContent="Redaguoti";
           ed.setAttribute("aria-label",`Redaguoti: ${li.querySelector(".t").textContent}, ${prettyDate(it.date)}`);
           ed.onclick=()=>startEdit(it.e); acts.append(ed);
@@ -1630,7 +1634,7 @@ function showTab(name){
   lsSet("sl27-tab", name);
   window.scrollTo(0,0);
   if(name==="chat"){ lastChatKey = ""; renderChat(); const ul=$("msgs"); ul.scrollTop = ul.scrollHeight; markChatSeen(); }
-  if(name==="log") updatePreview();
+  if(name==="log"){ $("f-date").min = earliestDate(); $("f-date").max = todayStr(); updatePreview(); }
 }
 function latestOtherMsg(){ return messages.filter(m=>m.athlete!==ME && active().includes(m.athlete)).reduce((mx,m)=>String(m.createdAt)>mx?String(m.createdAt):mx, ""); }
 function markChatSeen(){ const l = messages.reduce((mx,m)=>String(m.createdAt)>mx?String(m.createdAt):mx, ""); if(l) lsSet(SEEN_KEY, l); updateChatDot(); }

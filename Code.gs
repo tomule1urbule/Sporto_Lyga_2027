@@ -186,6 +186,9 @@ function checkEntry_(body) {
   // Ateities datų neleidžiama (+1 d. atsarga dėl laiko juostų)
   const tomorrow = Utilities.formatDate(new Date(Date.now() + 864e5), SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone(), 'yyyy-MM-dd');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > tomorrow) return { error: 'date' };
+  // Veiklą galima registruoti tik per 2 dienas (+1 d. atsarga dėl laiko juostų)
+  const earliest = Utilities.formatDate(new Date(Date.now() - 3 * 864e5), SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone(), 'yyyy-MM-dd');
+  if (body.sport !== 'bonus' && date < earliest) return { error: 'late' };
   const minutes = Number(body.minutes) || '';
   if (minutes !== '' && (minutes < 1 || minutes > 720)) return { error: 'minutes' };
   return { amount: amount, date: date, minutes: minutes, note: String(body.note || '').slice(0, 80) };

@@ -183,9 +183,10 @@ function checkEntry_(body) {
   if (!/^[a-z]{2,12}$/.test(String(body.sport))) return { error: 'sport' };
   if (!(amount > 0) || amount > 720) return { error: 'amount' };
   if (MINS[body.sport] != null && amount < MINS[body.sport] - 1e-9) return { error: 'too_short' };
-  // Ateities datų neleidžiama (+1 d. atsarga dėl laiko juostų)
-  const tomorrow = Utilities.formatDate(new Date(Date.now() + 864e5), SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone(), 'yyyy-MM-dd');
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > tomorrow) return { error: 'date' };
+  // Ateities datų neleidžiama (lentelės laiko juosta – Europe/Vilnius)
+  const today = Utilities.formatDate(new Date(), SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone(), 'yyyy-MM-dd');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: 'date' };
+  if (date > today) return { error: 'future' };
   // Veiklą galima registruoti tik per 2 dienas (+1 d. atsarga dėl laiko juostų)
   const earliest = Utilities.formatDate(new Date(Date.now() - 3 * 864e5), SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone(), 'yyyy-MM-dd');
   if (body.sport !== 'bonus' && date < earliest) return { error: 'late' };

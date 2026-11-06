@@ -961,6 +961,12 @@ function setupForm(){
   fs.innerHTML = SPORTS.map(s=>`<option value="${s.id}">${s.name}${s.desc ? ` (${s.desc})` : ""}</option>`).join("");
   const t = todayStr();
   $("f-date").value = t; $("f-date").max = t; $("f-date").min = earliestDate();
+  // iPhone neleidžia apriboti datos pasirinkimo, todėl netinkama data iškart pataisoma
+  $("f-date").addEventListener("change", ()=>{
+    const d = $("f-date").value, today = todayStr(), min = earliestDate();
+    if(d && d > today){ $("f-date").value = today; say("Negalima registruoti veiklos ateityje – data pakeista į šiandien.","err"); }
+    else if(d && d < min){ $("f-date").value = min; say(`Per vėlu: veiklą galima užregistruoti tik per ${LATE_DAYS} dienas – data pakeista į ${prettyDate(min)}.`,"err"); }
+  });
   fs.addEventListener("change",()=>{ $("f-amount").value=""; $("f-min").value=""; updatePreview(); });
   $("f-amount").addEventListener("input",updatePreview);
   $("f-min").addEventListener("input",updatePreview);
@@ -1069,7 +1075,7 @@ async function onSubmit(ev){
     }
   }catch(e){
     const er = String(e && e.message);
-    say(er==="too_short" ? `Per trumpa veikla. Užskaitoma nuo ${minText(sport)}` : er==="not_found" ? "Šios veiklos nebėra – gal ji ištrinta." : er==="busy" ? "Serveris šiuo metu užimtas. Pabandyk po minutės." : er==="late" ? `Per vėlu: veiklą galima užregistruoti tik per ${LATE_DAYS} dienas.` : "Nepavyko išsaugoti. Patikrink ryšį ir bandyk dar kartą.","err");
+    say(er==="too_short" ? `Per trumpa veikla. Užskaitoma nuo ${minText(sport)}` : er==="not_found" ? "Šios veiklos nebėra – gal ji ištrinta." : er==="busy" ? "Serveris šiuo metu užimtas. Pabandyk po minutės." : er==="late" ? `Per vėlu: veiklą galima užregistruoti tik per ${LATE_DAYS} dienas.` : er==="future" ? "Negalima registruoti veiklos ateityje." : "Nepavyko išsaugoti. Patikrink ryšį ir bandyk dar kartą.","err");
   }finally{ $("f-submit").disabled = false; busy = false; refresh(); }
 }
 

@@ -502,7 +502,9 @@ dialog::backdrop{background:rgba(6,11,16,.55)}
 const API_URL = "https://script.google.com/macros/s/AKfycbzSbysdNwLBeLb-04gG1ns0T9tFD0UqJX7-YY5eqRPsL3yFFLWWuCCw1Yjzwv9-WdCg/exec";
 /* ====================== */
 
-const ATHLETES = ["Edvinas","Tomas","Vygantas","Justas","Paulius","Eduardas","Dainius"];
+/* Bandomojo sezono dalyviai ir tikrosios lygos (nuo sausio 1 d.) dalyviai */
+const ATHLETES_TEST = ["Edvinas","Tomas","Vygantas","Justas","Paulius","Eduardas","Dainius"];
+const ATHLETES_REAL = ["Dzimis","Justas","Dainius","Vyga","Tomas","Paulius","Kamilė","Eduardas","Mariukas","Erika"];
 const PALETTE_NAMES = ["Oranžinė","Mėlyna","Žalia","Violetinė","Geltona","Rožinė","Raudona","Žydra","Ruda","Grafito","Salotinė","Tamsiai mėlyna","Bordo","Koralinė","Alyvinė","Smaragdinė","Alyvuogių","Purpurinė"];
 let PLAYER_COLORS = {}, colorsSupported = true, dataReady = false;
 /* Žaidėjo spalva: pasirinkta (iš lentelės) arba numatytoji, jei ji dar laisva */
@@ -573,6 +575,7 @@ const BONUSES_TEST = [
    TEST_SEASON = true – bandomasis sezonas 2026-10-26 – 2026-11-30.
    Prieš sausio 1 d. pakeisti į false (ir išvalyti bandomuosius duomenis). */
 const TEST_SEASON = true;
+const ATHLETES = TEST_SEASON ? ATHLETES_TEST : ATHLETES_REAL;
 const BONUSES = TEST_SEASON ? BONUSES_TEST : BONUSES_REAL;
 const BONUS = Object.fromEntries(BONUSES.map(b=>[b.id,b]));
 

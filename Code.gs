@@ -6,7 +6,8 @@
  */
 
 const SHEET_NAME = 'Veiklos';
-const ATHLETES = ['Edvinas', 'Tomas', 'Vygantas', 'Justas', 'Paulius', 'Eduardas', 'Dainius'];
+// Bandomojo sezono + tikrosios lygos dalyviai
+const ATHLETES = ['Edvinas', 'Tomas', 'Vygantas', 'Justas', 'Paulius', 'Eduardas', 'Dainius', 'Dzimis', 'Vyga', 'Kamilė', 'Mariukas', 'Erika'];
 // Veiklų sąrašas tikrinamas programėlėje, todėl keičiant veiklas šio kodo keisti nereikia.
 const HEADERS = ['id', 'athlete', 'sport', 'amount', 'date', 'note', 'createdAt', 'reactions', 'minutes', 'image'];
 const REACTIONS = ['💪', '🤯', '🖕', '👍'];

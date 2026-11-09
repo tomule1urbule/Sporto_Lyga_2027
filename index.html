@@ -998,8 +998,10 @@ function setupForm(){
   // iPhone neleidžia apriboti datos pasirinkimo, todėl netinkama data iškart pataisoma
   $("f-date").addEventListener("change", ()=>{
     const d = $("f-date").value, today = lastLogDay(), min = earliestDate();
-    if(d && d > today){ $("f-date").value = today; say("Negalima registruoti veiklos ateityje – data pakeista į šiandien.","err"); }
-    else if(d && d < min){ $("f-date").value = min; say(`Per vėlu: veiklą galima užregistruoti tik per ${LATE_DAYS} dienas – data pakeista į ${prettyDate(min)}.`,"err"); }
+    // Data nekeičiama tyliai – tik iškart parodoma klaida (išsaugoti vis tiek nepavyks)
+    if(d && d > today) say("Negalima registruoti veiklos ateityje – pasirink šiandienos ar ankstesnę datą.","err");
+    else if(d && d < min) say(`Per vėlu: veiklą galima užregistruoti tik per ${LATE_DAYS} dienas (anksčiausia data – ${prettyDate(min)}).`,"err");
+    else say("");
   });
   fs.addEventListener("change",()=>{ $("f-amount").value=""; $("f-min").value=""; updatePreview(); });
   $("f-amount").addEventListener("input",updatePreview);

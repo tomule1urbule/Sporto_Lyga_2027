@@ -95,6 +95,11 @@ h2{font-family:var(--f-display);font-weight:800;font-size:23px;text-transform:up
 .board.compact .row{padding:8px 0;gap:3px 10px;grid-template-columns:34px minmax(0,1fr) auto}
 .board.compact .rank{font-size:22px}
 .rank:has(.prize){grid-row:1 / span 3;align-self:start}
+/* Prizinės vietos: švelnus fonas ir aiškesnė riba po paskutinės prizinės vietos */
+.board .row.prized{background:color-mix(in srgb,var(--accent) 5%,transparent);margin:0 -14px;padding-left:14px;padding-right:14px;width:calc(100% + 28px)}
+.row.prized:first-child{border-radius:9px 9px 0 0}
+.row.prize-last{border-bottom:2px solid color-mix(in srgb,var(--accent) 45%,var(--line))}
+.prize-cut{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:right;padding:4px 0 0}
 .board.compact .who{font-size:15.5px}
 .board.compact .pts{font-size:23px}
 .board.compact .bar{height:4px}
@@ -754,7 +759,7 @@ function renderBoard(all){
       <div class="pts"><span class="v"></span><small>TŠK</small></div>
       <div class="bar"><i></i></div><div class="mix"></div>`;
     row.querySelector(".rank").textContent = rank;
-    if(PRIZES[rank-1]){ const pz = document.createElement("small"); pz.className = "prize"; pz.textContent = `${PRIZES[rank-1]} €`; row.querySelector(".rank").append(pz); }
+    if(PRIZES[rank-1]){ const pz = document.createElement("small"); pz.className = "prize"; pz.textContent = `${PRIZES[rank-1]} €`; row.querySelector(".rank").append(pz); row.classList.add("prized"); }
     row.querySelector(".dot").style.background = color;
     row.querySelector(".nm").textContent = r.a;
     const st = streakOf(r.a).current;
@@ -765,6 +770,9 @@ function renderBoard(all){
     row.querySelector(".mix").textContent = parts.join(" · ") || "Dar nėra veiklų";
     board.append(row);
   });
+  // Riba tarp prizinių ir kitų vietų
+  const prized = board.querySelectorAll(".row.prized");
+  if(prized.length && prized.length < order.length) prized[prized.length-1].classList.add("prize-last");
 }
 
 /* ---------- Bonuso kortelė ---------- */

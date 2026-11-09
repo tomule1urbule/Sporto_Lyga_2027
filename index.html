@@ -90,6 +90,15 @@ h2{font-family:var(--f-display);font-weight:800;font-size:23px;text-transform:up
 .row:hover .nm{text-decoration:underline;text-underline-offset:3px}
 .rank{font-family:var(--f-display);font-weight:900;font-size:28px;line-height:1;color:var(--muted);font-variant-numeric:tabular-nums}
 .row.lead .rank{color:var(--accent)}
+.rank .prize{display:block;font-family:var(--f-mono);font-weight:600;font-size:9.5px;line-height:1;margin-top:3px;color:var(--accent);letter-spacing:0;white-space:nowrap}
+/* Kompaktiška lentelė, kai dalyvių daug (8+) */
+.board.compact .row{padding:8px 0;gap:3px 10px;grid-template-columns:34px minmax(0,1fr) auto}
+.board.compact .rank{font-size:22px}
+.rank:has(.prize){grid-row:1 / span 3;align-self:start}
+.board.compact .who{font-size:15.5px}
+.board.compact .pts{font-size:23px}
+.board.compact .bar{height:4px}
+.board.compact .mix{font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .who{display:flex;align-items:center;gap:8px;font-weight:700;font-size:17px;min-width:0}
 .dot{width:10px;height:10px;border-radius:50%;flex:none}
 .pts{font-family:var(--f-display);font-weight:800;font-size:30px;line-height:1;text-align:right;font-variant-numeric:tabular-nums}
@@ -567,6 +576,8 @@ const TEST_SEASON = true;
 const BONUSES = TEST_SEASON ? BONUSES_TEST : BONUSES_REAL;
 const BONUS = Object.fromEntries(BONUSES.map(b=>[b.id,b]));
 
+/* Prizai už 1–5 vietas (rodomi tik tikrojoje lygoje) */
+const PRIZES = TEST_SEASON ? [] : [90, 35, 30, 25, 20];
 const START = TEST_SEASON ? "2026-10-26" : "2027-01-01", END = TEST_SEASON ? "2026-11-30" : "2027-03-31", NEWYEAR = "2027-01-01";
 const LEAGUE = TEST_SEASON ? "Bandomoji lyga" : "Žiemos lyga";
 const MONTHS = ["sausio","vasario","kovo","balandžio","gegužės","birželio","liepos","rugpjūčio","rugsėjo","spalio","lapkričio","gruodžio"];
@@ -724,6 +735,7 @@ function renderBoard(all){
   }
   const order = ACT.map((a,i)=>({a,i,...by[a]})).sort((x,y)=>y.pts-x.pts || x.a.localeCompare(y.a,"lt"));
   const board = $("board"); board.innerHTML = "";
+  board.classList.toggle("compact", order.length >= 8);
   if(!order.length){ const p=document.createElement("p"); p.className="sub"; p.style.margin="12px 0"; p.textContent="Dar niekas neprisijungė. Pasirink savo vardą ir spalvą – atsirasi lentelėje."; board.append(p); return; }
   const top = order[0].pts || 1;
   let rank = 0, prev = null;
@@ -739,11 +751,12 @@ function renderBoard(all){
       <div class="pts"><span class="v"></span><small>TŠK</small></div>
       <div class="bar"><i></i></div><div class="mix"></div>`;
     row.querySelector(".rank").textContent = rank;
+    if(PRIZES[rank-1]){ const pz = document.createElement("small"); pz.className = "prize"; pz.textContent = `${PRIZES[rank-1]} €`; row.querySelector(".rank").append(pz); }
     row.querySelector(".dot").style.background = color;
     row.querySelector(".nm").textContent = r.a;
     const st = streakOf(r.a).current;
     if(st >= 2){ row.querySelector(".streak").textContent = `🔥 ${st}`; row.querySelector(".streak").title = `${st} ${plural(st,"diena","dienos","dienų")} iš eilės`; }
-    row.setAttribute("aria-label", `${rank} vieta, ${r.a}, ${tsk(r.pts)}${st>=2?`, ${st} ${plural(st,"diena","dienos","dienų")} iš eilės`:""}. Atidaryti statistiką`);
+    row.setAttribute("aria-label", `${rank} vieta${PRIZES[rank-1] ? ` (prizas ${PRIZES[rank-1]} €)` : ""}, ${r.a}, ${tsk(r.pts)}${st>=2?`, ${st} ${plural(st,"diena","dienos","dienų")} iš eilės`:""}. Atidaryti statistiką`);
     row.querySelector(".v").textContent = fmt(r.pts);
     row.querySelector(".bar i").style.cssText = `width:${r.pts/top*100}%;background:${color}`;
     row.querySelector(".mix").textContent = parts.join(" · ") || "Dar nėra veiklų";

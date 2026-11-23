@@ -128,9 +128,15 @@ h2{font-family:var(--f-display);font-weight:800;font-size:23px;text-transform:up
 .card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px}
 form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .full{grid-column:1 / -1}
-label{display:flex;flex-direction:column;gap:5px;font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);min-width:0}
+label,.lbl{display:flex;flex-direction:column;gap:5px;font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);min-width:0}
 input,select{font:inherit;font-family:var(--f-body);font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:10px;width:100%;min-width:0;text-transform:none;letter-spacing:0}
 input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.dur{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dur .u{position:relative;display:block;min-width:0}
+.dur input{padding-right:46px;font-variant-numeric:tabular-nums}
+.dur input::-webkit-inner-spin-button,.dur input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.dur input{-moz-appearance:textfield;appearance:textfield}
+.dur i{position:absolute;right:11px;top:50%;transform:translateY(-50%);font-style:normal;font-family:var(--f-body);font-size:14px;letter-spacing:0;text-transform:none;color:var(--muted);pointer-events:none}
 .preview{grid-column:1 / -1;display:flex;align-items:baseline;justify-content:space-between;gap:12px;border-top:1px dashed var(--line);padding-top:12px}
 .preview .val{font-family:var(--f-display);font-weight:900;font-size:40px;line-height:1;color:var(--accent);font-variant-numeric:tabular-nums}
 .preview .rule{font-size:13px;color:var(--muted)}
@@ -415,9 +421,15 @@ dialog::backdrop{background:rgba(6,11,16,.55)}
           <div class="posting-as">Registruoja: <b>–</b></div>
           <div class="editbar" id="f-edit" hidden><span id="f-edit-t"></span><button type="button" class="link" id="f-edit-x">Atšaukti</button></div>
           <label class="full">Veikla<select id="f-sport"></select></label>
-          <label><span id="f-unit">Atstumas (km)</span><input id="f-amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="10" required></label>
-          <label id="f-min-l">Trukmė (min.)<input id="f-min" type="number" inputmode="numeric" min="0" step="1" placeholder="55"></label>
-          <label id="f-date-l">Data<input id="f-date" type="date" required></label>
+          <label class="full" id="f-amount-l"><span id="f-unit">Atstumas (km)</span><input id="f-amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="10" required></label>
+          <input id="f-min" type="hidden">
+          <div class="lbl full" id="f-dur-l"><span>Trukmė</span>
+            <div class="dur">
+              <span class="u"><input id="f-h" type="number" inputmode="numeric" min="0" max="12" step="1" placeholder="0" aria-label="Valandos"><i>val.</i></span>
+              <span class="u"><input id="f-m" type="number" inputmode="numeric" min="0" step="1" placeholder="45" aria-label="Minutės"><i>min.</i></span>
+            </div>
+          </div>
+          <label class="full" id="f-date-l">Data<input id="f-date" type="date" required></label>
           <label class="full"><span id="f-note-l">Pastaba (neprivaloma)</span><input id="f-note" type="text" maxlength="80"></label>
           <div class="photo-row" id="f-photo" hidden>
             <label class="attach wide" id="f-attach-l"><input id="f-file" type="file" accept="image/*" hidden>📷 Pridėti nuotrauką <span>(neprivaloma)</span></label>
@@ -1003,7 +1015,8 @@ function setupForm(){
     else if(d && d < min) say(`Per vėlu: veiklą galima užregistruoti tik per ${LATE_DAYS} dienas (anksčiausia data – ${prettyDate(min)}).`,"err");
     else say("");
   });
-  fs.addEventListener("change",()=>{ $("f-amount").value=""; $("f-min").value=""; updatePreview(); });
+  fs.addEventListener("change",()=>{ $("f-amount").value=""; $("f-min").value=""; syncDur(); updatePreview(); });
+  for(const id of ["f-h","f-m"]){ $(id).addEventListener("input",()=>{ syncDur(); updatePreview(); }); $(id).addEventListener("blur",()=>{ normDur(); updatePreview(); }); }
   $("f-amount").addEventListener("input",updatePreview);
   $("f-min").addEventListener("input",updatePreview);
   ff.addEventListener("change",()=>{ feedLimit=25; renderFeed(items()); });
@@ -1020,10 +1033,10 @@ const LIMITS = {run:45, walk:40, bike:200, ibike:180, swim:6, gym:180, games:240
 function checkAmount(sport, amount){
   const s = SPORT[sport]; if(!s || !(amount>0)) return null;
   const mn = MINS[sport];
-  if(s.unit==="min" && amount < 10) return {block:true, text:`Mažiausiai ${minText(sport)} Gal turėjai omeny ${fmt(amount)} val.?`, fix:Math.round(amount*60), fixText:`Pataisyti į ${Math.round(amount*60)} min.`};
+  if(s.unit==="min" && amount < 10) return {block:true, text:`Mažiausiai ${minText(sport)} Gal turėjai omeny ${fmt(amount)} val.?`, fix:Math.round(amount*60), fixText:`Pataisyti į ${durText(Math.round(amount*60))}`};
   if(mn!=null && amount < mn - 1e-9) return {block:true, text:`Per trumpa veikla. Užskaitoma nuo ${minText(sport)}`};
   if(s.unit==="min"){
-    if(!Number.isInteger(amount)) return {text:"Trukmę rašyk minutėmis, sveiku skaičiumi.", fix:Math.round(amount), fixText:`Pataisyti į ${Math.round(amount)} min.`};
+    if(!Number.isInteger(amount)) return {text:"Trukmę įvesk sveikomis minutėmis.", fix:Math.round(amount), fixText:`Pataisyti į ${durText(Math.round(amount))}`};
   }
   if(sport==="swim" && amount >= 100) return {text:`${fmt(amount)} km plaukimo? Atrodo, kad įvedei metrais.`, fix:Math.round(amount)/1000, fixText:`Pataisyti į ${fmt(amount/1000)} km`};
   if((sport==="run" || sport==="walk") && amount >= 1000) return {text:`${fmt(amount)} km? Atrodo, kad įvedei metrais arba žingsniais.`, fix:Math.round(amount/10)/100, fixText:`Pataisyti į ${fmt(amount/1000)} km`};
@@ -1035,14 +1048,34 @@ function checkAmount(sport, amount){
 const PACE = {run:[2.8, 15], walk:[6, 25], bike:[1, 12], swim:[10, 60]}; // min/km: [greičiausiai, lėčiausiai]
 function checkMinutes(sport, amount, mins){
   const s = SPORT[sport]; if(!s || s.unit!=="km" || !(amount>0) || !(mins>0)) return null;
-  if(mins < 10) return {block:true, text:`${fmt(mins)} min. – per trumpai. Gal turėjai omeny ${fmt(mins)} val.?`, fix:Math.round(mins*60), fixText:`Pataisyti į ${Math.round(mins*60)} min.`, field:"f-min"};
-  if(!Number.isInteger(mins)) return {text:"Trukmę rašyk minutėmis, sveiku skaičiumi.", fix:Math.round(mins), fixText:`Pataisyti į ${Math.round(mins)} min.`, field:"f-min"};
+  if(mins < 10) return {block:true, text:`${fmt(mins)} min. – per trumpai. Gal turėjai omeny ${fmt(mins)} val.?`, fix:Math.round(mins*60), fixText:`Pataisyti į ${durText(Math.round(mins*60))}`, field:"f-min"};
+  if(!Number.isInteger(mins)) return {text:"Trukmę įvesk sveikomis minutėmis.", fix:Math.round(mins), fixText:`Pataisyti į ${durText(Math.round(mins))}`, field:"f-min"};
   const pace = mins/amount, [fast, slow] = PACE[sport] || [0, 999];
-  if(pace < fast) return {text:`${fmt(amount)} km per ${mins} min. – labai greitai${sport==="walk" ? " ėjimui (gal tai buvo bėgimas?)" : ""}. Pasitikrink.`};
-  if(pace > slow) return {text:`${fmt(amount)} km per ${mins} min. – labai lėtai. Pasitikrink trukmę.`};
+  if(pace < fast) return {text:`${fmt(amount)} km per ${durText(mins)} – labai greitai${sport==="walk" ? " ėjimui (gal tai buvo bėgimas?)" : ""}. Pasitikrink.`};
+  if(pace > slow) return {text:`${fmt(amount)} km per ${durText(mins)} – labai lėtai. Pasitikrink trukmę.`};
   return null;
 }
 function readMins(){ return parseFloat(String($("f-min").value).replace(",", ".")); }
+/* Trukmė įvedama valandomis ir minutėmis; skaičiuojama minutėmis (min. veikloms – f-amount, km veikloms – f-min) */
+function durTarget(){ return SPORT[$("f-sport").value].unit==="km" ? $("f-min") : $("f-amount"); }
+function num(v){ const x = parseFloat(String(v).replace(",", ".")); return isFinite(x) ? x : 0; }
+function syncDur(){
+  const h = $("f-h").value.trim(), m = $("f-m").value.trim();
+  const total = num(h)*60 + num(m);
+  durTarget().value = (h || m) && total > 0 ? String(Math.round(total*100)/100) : "";
+}
+function setDur(total){
+  total = Number(total);
+  if(!(total > 0)){ $("f-h").value = ""; $("f-m").value = ""; durTarget().value = ""; return; }
+  total = Math.round(total);
+  $("f-h").value = total >= 60 ? String(Math.floor(total/60)) : "";
+  $("f-m").value = String(total % 60);
+  durTarget().value = String(total);
+}
+function normDur(){ // pvz. 0 val. 225 min. -> 3 val. 45 min.
+  const total = num($("f-h").value)*60 + num($("f-m").value);
+  if(total > 0 && Number.isInteger(total) && (num($("f-m").value) >= 60 || !Number.isInteger(num($("f-h").value)))) setDur(total);
+}
 function updateWarn(){
   const sport = $("f-sport").value, amount = parseFloat(String($("f-amount").value).replace(",", "."));
   const w = checkAmount(sport, amount) || checkMinutes(sport, amount, readMins());
@@ -1051,15 +1084,14 @@ function updateWarn(){
   $("f-warn").classList.toggle("block", !!w.block);
   $("f-warn-t").textContent = w.text;
   const fx = $("f-fix"); fx.hidden = w.fix == null;
-  if(w.fix != null){ const fid = w.field || "f-amount"; fx.textContent = w.fixText; fx.onclick = ()=>{ $(fid).value = String(w.fix); updatePreview(); $(fid).focus(); }; }
+  if(w.fix != null){ const fid = w.field || "f-amount"; fx.textContent = w.fixText; fx.onclick = ()=>{ $(fid).value = String(w.fix); if(fid==="f-min" || SPORT[sport].unit==="min"){ setDur(w.fix); $("f-m").focus(); } else $(fid).focus(); updatePreview(); }; }
 }
 function updatePreview(){
   if(confirmSig){ confirmSig = null; $("f-submit").textContent = submitLabel(); say(""); }
   updateWarn();
   const s = SPORT[$("f-sport").value];
-  $("f-unit").textContent = s.unit==="km" ? "Atstumas (km)" : "Trukmė (min.)";
-  $("f-min-l").hidden = s.unit!=="km";
-  $("f-date-l").classList.toggle("full", s.unit==="km");
+  $("f-unit").textContent = "Atstumas (km)";
+  $("f-amount-l").hidden = s.unit!=="km";
   $("f-amount").placeholder = s.unit==="km" ? "10" : "60";
   $("f-amount").step = s.unit==="km" ? "0.01" : "1";
   $("f-rule").textContent = (s.unit==="km" ? `${tsk(s.pts)} už ${s.per} km` : `${tsk(s.pts)} už valandą`) + ` · nuo ${minText(s.id)}`;
@@ -1072,10 +1104,10 @@ async function onSubmit(ev){
   const amount=parseFloat(String($("f-amount").value).replace(",", "."));
   const t = todayStr(), km = SPORT[sport].unit==="km";
   if(!athlete) return say("Pirmiausia prisijunk – pasirink savo vardą.","err");
-  if(!(amount>0)) return say(km ? "Įvesk atstumą kilometrais." : "Įvesk, kiek minučių sportavai.","err");
+  if(!(amount>0)){ (km ? $("f-amount") : $("f-h")).focus(); return say(km ? "Įvesk atstumą kilometrais." : "Įvesk veiklos trukmę (valandas ir/ar minutes).","err"); }
   if(km ? amount>300 : amount>720) return say("Skaičius per didelis vienai veiklai. Pasitikrink.","err");
   const mins = km ? readMins() : amount;
-  if(km && !(mins>0)){ $("f-min").focus(); return say("Įvesk veiklos trukmę minutėmis.","err"); }
+  if(km && !(mins>0)){ $("f-h").focus(); return say("Įvesk veiklos trukmę (valandas ir/ar minutes).","err"); }
   if(km && mins > 720) return say("Trukmė per didelė vienai veiklai. Pasitikrink.","err");
   const chk = checkAmount(sport, amount) || checkMinutes(sport, amount, mins);
   if(chk && chk.block) return say(chk.text, "err");
@@ -1083,7 +1115,7 @@ async function onSubmit(ev){
   if(chk && confirmSig !== sig){
     confirmSig = sig;
     $("f-submit").textContent = "Taip, viskas teisinga";
-    return say(`Ar tikrai ${amountText(sport, amount)}${km ? ` per ${mins} min.` : ""} (${SPORT[sport].name.toLowerCase()})? Jei teisingai – spausk dar kartą.`, "err");
+    return say(`Ar tikrai ${amountText(sport, amount)}${km ? ` per ${durText(mins)}` : ""} (${SPORT[sport].name.toLowerCase()})? Jei teisingai – spausk dar kartą.`, "err");
   }
   if(!date) return say("Pasirink datą.","err");
   if(date > t) return say("Negalima registruoti veiklos ateityje.","err");
@@ -1107,7 +1139,7 @@ async function onSubmit(ev){
       exitEdit(); showTab("feed"); $("status").textContent = "Pakeitimai išsaugoti ✓"; statusHold = Date.now() + 4000;
     } else {
       say(`Užskaityta: +${tsk(pointsOf(sport,amount))} (${athlete})`,"ok");
-      $("f-amount").value=""; $("f-min").value=""; $("f-note").value=""; clearActImage(); updatePreview(); $("f-warn").hidden = true;
+      $("f-amount").value=""; $("f-min").value=""; $("f-h").value=""; $("f-m").value=""; $("f-note").value=""; clearActImage(); updatePreview(); $("f-warn").hidden = true;
     }
   }catch(e){
     const er = String(e && e.message);
@@ -1339,8 +1371,9 @@ function startEdit(e){
   $("f-edit-t").innerHTML = "Redaguojama: <b></b>";
   $("f-edit-t").querySelector("b").textContent = `${SPORT[e.sport].name}, ${prettyDate(e.date)}`;
   $("f-sport").value = e.sport;
-  $("f-amount").value = String(e.amount);
-  $("f-min").value = SPORT[e.sport].unit==="km" && e.minutes ? String(e.minutes) : "";
+  const isKm = SPORT[e.sport].unit==="km";
+  $("f-amount").value = isKm ? String(e.amount) : ""; $("f-min").value = "";
+  setDur(isKm ? (e.minutes || 0) : e.amount);
   $("f-date").value = e.date;
   $("f-note").value = e.note || "";
   if(e.image){
@@ -1349,12 +1382,12 @@ function startEdit(e){
     $("f-pending-t").textContent = "📷 Pridėta nuotrauka";
   }
   confirmSig = null; $("f-submit").textContent = submitLabel(); say(""); updatePreview();
-  $("f-amount").focus({preventScroll:true});
+  (isKm ? $("f-amount") : $("f-h")).focus({preventScroll:true});
 }
 function exitEdit(){
   editing = null; editRemoveImage = false; clearActImage();
   $("h-log").textContent = "Registruoti veiklą"; $("f-edit").hidden = true;
-  $("f-amount").value=""; $("f-min").value=""; $("f-note").value=""; $("f-date").value = todayStr();
+  $("f-amount").value=""; $("f-min").value=""; $("f-h").value=""; $("f-m").value=""; $("f-note").value=""; $("f-date").value = todayStr();
   confirmSig = null; $("f-submit").textContent = submitLabel(); say(""); updatePreview(); $("f-warn").hidden = true;
 }
 function setupActPhoto(){
